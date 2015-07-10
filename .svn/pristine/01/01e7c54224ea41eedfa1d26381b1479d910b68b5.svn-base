@@ -1,0 +1,276 @@
+    //
+//  CMExamControl.m
+//  MLPlayer
+//
+//  Created by sunjj on 11-9-26.
+//  Copyright 2011 w. All rights reserved.
+//
+
+#import "CMExamControl.h"
+#import "CMWrongViewController.h"
+//#import "MobClick.h"
+#import "cmmyinfo.h"
+
+@implementation CMExamControl
+
+- (void)reportHoriziontalSwipe:(UISwipeGestureRecognizer *)tap {
+    
+	if(tap.direction  == UISwipeGestureRecognizerDirectionLeft)
+	{
+        selectedIndex=selview.tag+1;
+		[self onselect:(selview.tag+1)];
+	}
+	else if(tap.direction == UISwipeGestureRecognizerDirectionRight)
+	{
+        selectedIndex=selview.tag-1;
+		[self onselect:(selview.tag-1)];
+	}
+
+}
+
+-(void)onselect:(int)pos{
+
+	if(pos < 0 || pos > 2)
+		return;
+    
+	[UIView beginAnimations:nil context:nil];
+	[UIView setAnimationDelegate:self];
+	[UIView setAnimationDuration:0.3];
+    
+    //底部高亮图片坐标修改
+    CGRect selviewFrame = selview.frame;
+    
+	if(pos == 0)
+    {
+        //修改相应按钮标题颜色
+        [firbtn setTitleColor:kColorForeground forState:UIControlStateNormal];
+        [thrbtn setTitleColor:UIColorRGB(0x777777) forState:UIControlStateNormal];
+        
+        selviewFrame.origin.x = 0;
+    }
+	else
+    {
+        [firbtn setTitleColor:UIColorRGB(0x777777) forState:UIControlStateNormal];
+        [thrbtn setTitleColor:kColorForeground forState:UIControlStateNormal];
+        
+        selviewFrame.origin.x = self.view.bounds.size.width/2;
+    }
+    
+    selview.frame = selviewFrame;
+	selview.tag = pos;
+	[UIView commitAnimations];
+    
+	
+	UIView* curview = nil;
+    
+    self.tagbarHeight = 41;
+    
+	if (pos == 0)
+    {
+		if (myExamControl == nil)
+        {
+			myExamControl = [[CMMyExamControl alloc] initWithFrame:CGRectMake(0,self.tagbarHeight, UI_IOS_WINDOW_WIDTH,  UI_IOS_VC_HEIGHT)];
+        }
+		curview = myExamControl;
+        [myExamControl startFlash];
+	}
+    else
+    {
+		if (practiceControl== nil)
+        {
+            practiceControl = [[CMPracticeControl alloc] initWithFrame: CGRectMake(0,self.tagbarHeight, UI_IOS_WINDOW_WIDTH,  UI_IOS_VC_HEIGHT)];
+        }
+        
+		curview = practiceControl;
+		[practiceControl startFlash];
+	}
+    
+	curview.userInteractionEnabled = YES;
+	UISwipeGestureRecognizer *horizontal = [[UISwipeGestureRecognizer alloc]initWithTarget:self action:@selector(reportHoriziontalSwipe:)];  
+	horizontal.direction = UISwipeGestureRecognizerDirectionLeft;  
+	[curview addGestureRecognizer:horizontal];
+    CMRELEASE(horizontal);
+	
+	horizontal = [[UISwipeGestureRecognizer alloc]initWithTarget:self action:@selector(reportHoriziontalSwipe:)];  
+	horizontal.direction = UISwipeGestureRecognizerDirectionRight;  
+	[curview addGestureRecognizer:horizontal];
+    CMRELEASE(horizontal);
+	
+	[self.view addSubview:curview];
+}
+
+/*
+// Implement loadView to create a view hierarchy programmatically, without using a nib.
+- (void)loadView {
+}
+*/
+
+-(void)viewWillAppear:(BOOL)animated
+{
+	//[self gotoRefresh];
+    //[MobClick beginEvent:@"ExamTime"];
+    [self onselect:selectedIndex];
+    [super viewWillAppear:animated];
+}
+
+
+- (void)viewWillDisappear:(BOOL)animated
+{
+  //  [MobClick endEvent:@"ExamTime"];
+    [super viewWillDisappear:animated];
+}
+
+
+// Implement viewDidLoad to do additional setup after loading the view, typically from a nib.
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    
+    self.titleLabel.text = self.navigationItem.title;
+    
+
+    CGRect f = [[self view] bounds];
+    
+    UIImage* bkimage = [UIImage imageNamed:@"catnavbk"];
+    UIView* catview = [[UIView alloc] init];
+    catview.backgroundColor = [UIColor colorWithPatternImage:bkimage];
+    f.size.height = bkimage.size.height;
+    catview.frame = f;
+    
+    selview = [[UIImageView alloc] init];
+    selview.backgroundColor = kColorForeground;
+    selview.frame = CGRectMake(0, bkimage.size.height - 3, f.size.width/2, 3);
+    
+    firbtn = [UIButton buttonWithType:UIButtonTypeCustom];
+    firbtn.tag = 0;
+    [firbtn setTitle:I(@"测验")
+            forState:UIControlStateNormal];
+    [firbtn setTitleColor:UIColorRGB(0x065cc6) forState:UIControlStateNormal];
+    [firbtn setTitleColor:[UIColor lightGrayColor] forState:UIControlStateHighlighted];
+    firbtn.frame = CGRectMake(0, 0, f.size.width/2, bkimage.size.height);
+    [firbtn addTarget:self action:@selector(gotoselect:) forControlEvents:UIControlEventTouchUpInside];
+    
+    
+    thrbtn = [UIButton buttonWithType:UIButtonTypeCustom];
+    thrbtn.tag = 2;
+    [thrbtn setTitle:I(@"练习")
+            forState:UIControlStateNormal];
+    [thrbtn setTitleColor:UIColorRGB(0x777777) forState:UIControlStateNormal];
+    [thrbtn setTitleColor:[UIColor lightGrayColor] forState:UIControlStateHighlighted];
+    thrbtn.frame = CGRectMake(f.size.width/2, 0, f.size.width/2, bkimage.size.height);
+    [thrbtn addTarget:self action:@selector(gotoselect:) forControlEvents:UIControlEventTouchUpInside];
+    
+    selview.tag = 0;
+    [catview addSubview:selview];
+    [catview addSubview:firbtn];
+    [catview addSubview:thrbtn];
+    [self.view addSubview:catview];
+    CMRELEASE(catview);
+    
+    selectedIndex=0;
+    [self onselect:0];
+
+
+	//[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(refreshWrongCount:) name:@"refreshwrongcount" object:nil];
+}
+/*
+- (void)refreshWrongCount:(id)sender
+{
+    UIView *wrongView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 45, 44)];
+    wrongView.backgroundColor = [UIColor clearColor];
+    
+	UIButton *wrongbtn = [UIButton buttonWithType:UIButtonTypeCustom];
+	wrongbtn.frame = CGRectMake(0, 0, 45, 44);
+	[wrongbtn setTitle:I(@"错题") forState:UIControlStateNormal];
+	[wrongbtn setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
+	[wrongbtn setTitleColor:[UIColor lightGrayColor] forState:UIControlStateHighlighted];
+	[wrongbtn addTarget:self action:@selector(gotoWrong:) forControlEvents:UIControlEventTouchUpInside];
+    [wrongView addSubview:wrongbtn];
+    
+    if (CMMyInfo::GetInstance()->GetWrongQa() > 0)
+    {
+        UIImageView *tipsimage = [[UIImageView alloc] init];
+        tipsimage.frame = CGRectMake(27, 2, 20, 20);
+        tipsimage.image = [UIImage imageNamed:@"wrongTips"];
+        
+        UILabel *wronglabel = [[UILabel alloc] initWithFrame:CGRectMake(0, 0, 20, 20)];
+        wronglabel.backgroundColor = [UIColor clearColor];
+        wronglabel.textColor = [UIColor whiteColor];
+        wronglabel.text = [NSString stringWithFormat:@"%d",CMMyInfo::GetInstance()->GetWrongQa()];
+        wronglabel.textAlignment = UITextAlignmentCenter;
+        wronglabel.font = [UIFont systemFontOfSize:12];
+        [tipsimage addSubview:wronglabel];
+        [wrongView addSubview:tipsimage];
+        [wronglabel release];
+        [tipsimage  release];
+    }
+    
+    UIImageView* vsep = [[UIImageView alloc] init];
+	vsep.image = [UIImage imageNamed:@"navsep"];
+	vsep.frame = CGRectMake(0, 0, 2, 44);
+    
+    if (!__iOS7)
+    {
+        [wrongView addSubview:vsep];
+    }
+    [vsep release];
+    
+    UIBarButtonItem *rightItem = [[UIBarButtonItem alloc] initWithCustomView:wrongView];
+    //self.navigationItem.rightBarButtonItem = rightItem;
+    [rightItem release];
+    [wrongView release];
+}
+*/
+-(void)gotoselect:(id)sender
+{
+	UIButton* btn = ((UIButton*)sender);
+	if(btn.tag == selview.tag)
+		return;
+    selectedIndex=btn.tag;
+	[self onselect:btn.tag];
+
+}
+/*
+- (IBAction)gotoWrong:(id)sender
+{
+    CMWrongViewController *wrongcontrol = [[CMWrongViewController alloc] init];
+    wrongcontrol.title = I(@"错题");
+    wrongcontrol.hidesBottomBarWhenPushed = YES;
+    [self.navigationController pushViewController:wrongcontrol animated:YES];
+    [wrongcontrol release];
+}
+ */
+/*
+// Override to allow orientations other than the default portrait orientation.
+- (BOOL)shouldAutorotateToInterfaceOrientation:(UIInterfaceOrientation)interfaceOrientation {
+    // Return YES for supported orientations.
+    return (interfaceOrientation == UIInterfaceOrientationPortrait);
+}
+*/
+
+- (void)didReceiveMemoryWarning {
+    // Releases the view if it doesn't have a superview.
+    [super didReceiveMemoryWarning];
+    
+    // Release any cached data, images, etc. that aren't in use.
+}
+
+- (void)viewDidUnload {
+    [super viewDidUnload];
+    // Release any retained subviews of the main view.
+    // e.g. self.myOutlet = nil;
+}
+
+
+- (void)dealloc {
+	CMRELEASE(wrongControl);
+	CMRELEASE(practiceControl);
+	CMRELEASE(myExamControl);
+    CMRELEASE(selview);
+
+# if ! __has_feature(objc_arc)
+	[super dealloc];
+# endif
+}
+
+
+@end

@@ -1,0 +1,21 @@
+/*
+============================================================================
+ Name		: bld.inf
+ Author	  : 
+ Copyright   : Your copyright notice
+ Description : This file provides the information required for building the
+				whole of a MLPlayer.
+============================================================================
+*/
+
+PRJ_EXPORTS
+..\avc\armv5\urel\avc.lib \epoc32\release\armv5\urel\avc.lib
+..\avc\armv5\udeb\avc.lib \epoc32\release\armv5\udeb\avc.lib
+
+PRJ_PLATFORMS
+WINSCW ARMV5 GCCE
+
+PRJ_MMPFILES
+
+player.mmp
+

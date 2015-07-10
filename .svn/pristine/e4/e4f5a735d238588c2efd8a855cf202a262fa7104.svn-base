@@ -1,0 +1,31 @@
+/*
+============================================================================
+ Name        : xmlparser.mmp
+ Author      : 
+ Version     :
+ Copyright   : Your copyright notice
+ Description : This is the project specification file for cximage.
+============================================================================
+*/
+TARGET                                  xmlparser.lib 
+TARGETTYPE                              lib 
+UID                                     0x0 0xe237677c 
+SECUREID                                0xea2c28a0
+
+USERINCLUDE                             ..\..
+USERINCLUDE                             ..\..\..\include
+
+SYSTEMINCLUDE                           \epoc32\include 
+SYSTEMINCLUDE                           \epoc32\include\libc
+
+SOURCEPATH                              ..\..
+SOURCE                                  tinystr.cpp
+SOURCE                                  tinyxml.cpp
+SOURCE                                  tinyxmlerror.cpp
+SOURCE                                  tinyxmlparser.cpp
+
+LIBRARY                                 euser.lib 
+LIBRARY                                 estor.lib 
+VENDORID                                0 
+CAPABILITY                              NONE
+MACRO 

@@ -1,0 +1,23 @@
+<setting>
+<iapid name="默认接入点" value="-1" />
+<buftime name="缓冲大小" value="60" />
+<rotation name="旋转" value="270" />
+<enableroom name="使用缩放" value="1" />
+<newmsgprompt name="新内容提醒" value="1" />
+
+<centerserverurl name="中心服务器地址3" value="http://mlintest.midea.com.cn:8080/wdxieyi/api.do" />
+                                              
+
+<customer name="客户名称" value="" />
+<serverurl name="客户服务器地址" value="" />
+<name name="用户名" value="" />
+<pass name="密码" value="" />
+<autologin name="自动登录" value="1" />
+<autoloadmore name="自动加载" value="1" />
+<playmode name="播放模式" value="1" />
+<fullscreenmode name="全屏模式" value="1" />
+<mshake name="摇一摇" value="1" />
+
+<enterprise id="wd" slogan="轻松学习,愉悦提升" title="美课" />
+
+</setting>

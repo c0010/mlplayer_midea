@@ -1,0 +1,44 @@
+//
+//  CMViewController.h
+//  OCplusplus
+//
+//  Created by sunjj on 11-4-28.
+//  Copyright 2011 __MyCompanyName__. All rights reserved.
+//
+
+#import <UIKit/UIKit.h>
+#import "tool.h"
+#import "MLPlayerAppDelegate.h"
+#import "CMRationViewController.h"
+
+@interface CMViewController : CMRationViewController<UINavigationBarDelegate> {
+
+
+}
+
+@property (nonatomic, strong) UILabel *titleLabel;
+@property (nonatomic, assign) BOOL bAppStateIsBackground;
+@property (nonatomic, assign) BOOL bIsPush;
+@property (nonatomic, assign) BOOL bIsShowTabbar;   //是否显示tabbar
+@property (nonatomic, assign) BOOL bIsShowTagbar;   //是否显示tagbar标签栏
+@property (nonatomic, assign) CGFloat tabbarHeight;   //tabbar高度
+@property (nonatomic, assign) CGFloat tagbarHeight;   //tagbar标签栏高度
+@property (nonatomic, assign) CGFloat navibarHeight;   //导航栏高度
+
+//返回到上一界面
+- (void)gotoBack;
+
+//返回到某一界面
+//- (void)gotoBackTo:(NSString *)name;
+
+//跳转到
+- (void)gotoTop;
+
+- (UIEdgeInsets)itemFitDifferentVersion:(BOOL)leftItem;
+
+//从button索引到TableCell
+- (UITableViewCell *)buttonSuperCell:(UIButton *)btn;
+
+//回到最顶端
+- (void)scrollToTop;
+@end

@@ -1,0 +1,101 @@
+//
+//  CMVersionVerifyController.m
+//  MLPlayer
+//
+//  Created by 廖宏兴 on 15/6/22.
+//  Copyright (c) 2015年 w. All rights reserved.
+//
+
+#import "CMVersionVerifyAgent.h"
+#import "tool.h"
+#import "CMAlertView.h"
+
+
+@implementation CMVersionVerifyAgent
+
+static CMVersionVerifyAgent *versionVerifyAgent;
+
+
++ (instancetype)sharedVersionVerifyAgent{
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        versionVerifyAgent = [[CMVersionVerifyAgent alloc] init];
+    });
+    return versionVerifyAgent;
+}
+
+- (instancetype)init{
+    if ((self = [super init])){
+        m_pVersionVerifyListener = new CMVersionVerifyListener();
+        m_pVersionVerify = new CMVersionVerify(m_pVersionVerifyListener);
+        m_pVersionVerify->SetUserData((__bridge void*)self);
+    }
+     return self;
+}
+
+- (void)receivedVersionVerifyData{
+    if (NSStringFrom(m_pVersionVerify->sDownUrl).length == 0){
+        if (!bCheckAtStartUp) {
+             [tool ShowAlert:I(@"目前已经是最新版本")];
+        }
+    }
+    else{
+        WEAKSELF;
+        if (m_pVersionVerify->bForceUpdate) {
+            CMAlertView *alert = [[CMAlertView alloc] initWithTitle:[NSString stringWithFormat:I(@"检测到新版本%@"), NSStringFrom(m_pVersionVerify->sVerCode)] message:NSStringFrom(m_pVersionVerify->sVerNode) cancelButtonTitle:nil otherButtonTitles:I(@"立即升级") completionBlock:^(NSUInteger buttonIndex, CMAlertView *alertView){
+                STRONGSELF;
+                if (buttonIndex == BUTTON_CONFIRM_TAG) {
+                    NSString *str = NSStringFrom(sself->m_pVersionVerify->sDownUrl);
+                    NSURL *url = [NSURL URLWithString:str];
+                    if ([[UIApplication sharedApplication] canOpenURL:url]) {
+                        [[UIApplication sharedApplication] openURL:url];
+                    }
+                    else {
+                        [tool ShowAlert:I(@"升级地址出错,请反馈.")];
+                        return;
+                    }
+                }
+            }];
+            alert.disabledOutSide = YES;
+            [alert show];
+        }
+        else {
+            CMAlertView *alert = [[CMAlertView alloc] initWithTitle:[NSString stringWithFormat:I(@"检测到新版本%@"), NSStringFrom(m_pVersionVerify->sVerCode)] message:NSStringFrom(m_pVersionVerify->sVerNode) cancelButtonTitle:I(@"暂不更新") otherButtonTitles:I(@"立即升级") completionBlock:^(NSUInteger buttonIndex, CMAlertView *alertView){
+                STRONGSELF;
+                if (buttonIndex == BUTTON_CONFIRM_TAG) {
+                    NSString *str = NSStringFrom(sself->m_pVersionVerify->sDownUrl);
+                    NSURL *url = [NSURL URLWithString:str];
+                    if ([[UIApplication sharedApplication] canOpenURL:url]) {
+                        [[UIApplication sharedApplication] openURL:url];
+                    }
+                    else {
+                        [tool ShowAlert:I(@"升级地址出错,请反馈.")];
+                        return;
+                    }
+                }
+            }];
+            alert.disabledOutSide = NO;
+            [alert show];
+        }
+    }
+}
+
+
+
+- (void)checkUpdate{
+    bCheckAtStartUp = NO;
+    [tool ShowAlert:I(@"正在检查新版本...")];
+    versionVerifyAgent->m_pVersionVerify->GetVersionMsg();
+}
+
+- (void)checkUpdateWhenApplicationStart{
+    bCheckAtStartUp = YES;
+    versionVerifyAgent->m_pVersionVerify->GetVersionMsg();
+}
+
+- (void)dealloc{
+    SAFEDELETE(m_pVersionVerify);
+    SAFEDELETE(m_pVersionVerifyListener);
+}
+
+@end

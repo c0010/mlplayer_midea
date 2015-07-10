@@ -1,0 +1,127 @@
+//
+//  MLPlayerAppDelegate.h
+//  MLPlayer
+//
+//  Created by sunjj on 11-5-3.
+//  Copyright 2011 __MyCompanyName__. All rights reserved.
+//
+#include "cmgloballistener.h"
+class CMGlobalListener_ios;
+
+#import <UIKit/UIKit.h>
+#import <QuartzCore/QuartzCore.h>
+
+#import "LPanelTableview.h"
+#import "RNCachingURLProtocol.h"
+#import "cmcommon.h"
+#import "CMXmppHandler.h"
+#import "FaceBoard.h"
+#import "cmpushmsg.h"
+#import "Reachability.h"
+
+typedef enum {
+    TAGJumpFromWetool = 1,
+    TAGJumpFromMidea
+}TAGJumpFrom;
+
+@class CMPlayerControl;
+@class CMGetNewControl;
+@class CMPushMessage;
+@interface MLPlayerAppDelegate : NSObject <UIApplicationDelegate> {
+
+
+    IBOutlet UIWindow *window;
+    
+    UIWindow *_guideWindow;
+    
+    UINavigationController *_navigationController;
+
+	NSTimer *downTime0;
+	
+    TPushItem *m_pushItem;
+	CMPushMessage* device;
+	BOOL _isActive;
+	BOOL _hasNotification;
+	BOOL _bShowAlert;
+	NSString* _sNotificationText;
+	NSString* _sType;
+    NSString* _sID;
+    
+    TAGJumpFrom jumpedTag;
+    
+    CMGetNewControl *m_pNewControl;
+	
+	CMGlobalListener_ios* mGlobalListener;
+    
+    Reachability *pReachability;
+    
+    
+@public
+    NSString *g_strDeviceToken;
+}
+
+/**
+ *  将需要跳转we工具的代码合为一处
+ *
+ *  @return 返回的bool值只是用在applicationdidfinishlaunching方法里
+ */
+- (BOOL)jumpToWeTool;
+
+/**
+ *  绑定推送频道与别名
+ */
+- (void)bindPushTagsAndAlias;
+
+-(void)HandleRemoteNotification;
+-(void)ShowNotification;
+-(void)ShowNewContent;
+-(void)OnKicked;
+NSUInteger DeviceSystemMajorVersion();
+
+@property (nonatomic,strong) UIWindow *guideWindow;
+@property (nonatomic, strong) IBOutlet UIWindow *window;
+@property (nonatomic, strong) UINavigationController *navigationController;
+@property (nonatomic,strong) NSMutableSet* mset;
+
+@property (nonatomic, assign) TAGJumpFrom jumpedTag;
+
+@property (nonatomic,strong) FaceBoard *faceBoard;
+
+@property (nonatomic,weak) CMPlayerControl *playerController;
+
+@property (nonatomic, strong) UIView *m_pImgUp,*m_pImgDown;
+
+
+
+@end
+
+class CMGlobalListener_ios : public CMGlobalListener
+{
+   public:
+	CMGlobalListener_ios(){};
+
+	virtual~CMGlobalListener_ios(){};
+	
+	virtual void OnKicked(int nErr){
+        
+        MLPlayerAppDelegate *appDelegate = [UIApplication sharedApplication].delegate;
+
+        switch (nErr) {
+            case TResult::EKicked:
+                [appDelegate performSelectorOnMainThread:@selector(OnKicked) withObject:nil waitUntilDone:NO];
+                break;
+                
+                
+            case TResult::EUserOrPassError:
+                [appDelegate performSelectorOnMainThread:@selector(OnRelogin) withObject:nil waitUntilDone:NO];
+                break;
+                
+            default:
+                break;
+        }
+		
+//         OnKicked];
+	};
+};
+
+

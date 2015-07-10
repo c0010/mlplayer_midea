@@ -1,0 +1,474 @@
+//
+//  CMSearchQRCode.m
+//  MLPlayer
+//
+//  Created by sunjj on 14/12/19.
+//  Copyright (c) 2014年 w. All rights reserved.
+//
+
+#import "CMSearchQRCode.h"
+#import "CMAlertView.h"
+#import "CMCourseDetailControl.h"
+
+@interface CMSearchQRCode ()
+{
+    int m_orign_x;
+    int m_orign_y;
+    
+}
+
+@end
+
+@implementation CMSearchQRCode
+
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    // Do any additional setup after loading the view.
+    self.title = I(@"扫一扫");
+    
+    self.titleLabel.text = self.title;
+    
+    m_orign_x = 20;
+    m_orign_y = 60;
+    
+    [self scanAction];
+//    [self test];
+    
+    isRunning = FALSE;
+}
+
+-(void)setInfo:(TTrainSignInItem &)item
+{
+    curItem = &item;
+    
+}
+
+-(void)test{
+
+    self.readerView = [[ZBarReaderView alloc] init];
+    
+    self.readerView.frame = CGRectMake(m_orign_x, m_orign_y, UI_IOS_WINDOW_WIDTH-2*m_orign_x, UI_IOS_WINDOW_WIDTH);
+
+    self.readerView.readerDelegate = self;
+    
+    //关闭闪光灯
+    self.readerView.torchMode = 0;
+    
+    [self openWaitActivity];
+    
+    double delayInSeconds = 1.5;
+    dispatch_time_t popTime = dispatch_time(DISPATCH_TIME_NOW, delayInSeconds * NSEC_PER_SEC);
+    dispatch_after(popTime, dispatch_get_main_queue(), ^(void){
+        
+        [self.waitActivity stopAnimating];
+        
+        self.readerView.frame =CGRectMake(m_orign_x, m_orign_y, UI_IOS_WINDOW_WIDTH-2*m_orign_x, UI_IOS_WINDOW_WIDTH-2*m_orign_x);
+        [self.view addSubview:self.readerView];
+        [self setScanView];
+        [self.readerView start];
+        
+    });
+    
+}
+
+- (void)viewWillDisappear:(BOOL)animated{
+    
+    [super viewWillDisappear:animated];
+    if (!__iOS7) {
+        [self.readerView stop];
+    }
+    else{
+        [_session stopRunning];
+        [time invalidate];
+        time = nil;
+        [self.waitActivity stopAnimating];
+    }
+    
+}
+
+- (void)dealloc{
+    if (curItem) {
+        curItem->Cancel();
+        curItem->SetUserData(NULL);
+        curItem->SetListener(NULL, NULL);
+        //        SAFEDELETE(curItem);
+    }
+    SAFEDELETE(m_pUpdataDataListerner);
+}
+
+-(void)scanAction
+{
+    if (__iOS7) {
+        
+        
+        // Device
+        _device = [AVCaptureDevice defaultDeviceWithMediaType:AVMediaTypeVideo];
+        
+        // Input
+        _input = [AVCaptureDeviceInput deviceInputWithDevice:self.device error:nil];
+        
+        // Output
+        _output = [[AVCaptureMetadataOutput alloc]init];
+        [_output setMetadataObjectsDelegate:self queue:dispatch_get_main_queue()];
+        
+        // Session
+        _session = [[AVCaptureSession alloc]init];
+        [_session setSessionPreset:AVCaptureSessionPresetHigh];
+        if ([_session canAddInput:self.input])
+        {
+            [_session addInput:self.input];
+        }
+        
+        if ([_session canAddOutput:self.output])
+        {
+            [_session addOutput:self.output];
+        }
+        
+        // 条码类型 AVMetadataObjectTypeQRCode
+        
+        if ([_output.availableMetadataObjectTypes containsObject:AVMetadataObjectTypeQRCode]) {
+            _output.metadataObjectTypes =@[AVMetadataObjectTypeQRCode];
+        }else{
+            
+           AVAuthorizationStatus authStatus =  [AVCaptureDevice authorizationStatusForMediaType:AVMediaTypeVideo];
+            
+            if( authStatus == AVAuthorizationStatusDenied){
+                
+                UIAlertView *alertview = [[UIAlertView alloc]initWithTitle:@"" message:I(@"照相机打开失败，请到设置中打开照相机的访问权限") delegate:self cancelButtonTitle:I(@"确定") otherButtonTitles:nil, nil];
+                [alertview show];
+                
+                return;
+                
+            }
+            
+            UIAlertView *alertview = [[UIAlertView alloc]initWithTitle:@"" message:I(@"无法打开照相机") delegate:self cancelButtonTitle:I(@"确定") otherButtonTitles:nil, nil];
+            [alertview show];
+        }
+            
+
+        
+        
+        // Preview
+        _preview =[AVCaptureVideoPreviewLayer layerWithSession:self.session];
+        _preview.videoGravity = AVLayerVideoGravityResizeAspectFill;
+        _preview.frame =CGRectMake(m_orign_x, m_orign_y, UI_IOS_WINDOW_WIDTH-2*m_orign_x, UI_IOS_WINDOW_WIDTH-2*m_orign_x);
+        [self.view.layer insertSublayer:self.preview atIndex:0];
+        
+        // Start
+//        [_session startRunning];
+        
+        [self openWaitActivity];
+        
+        double delayInSeconds = 1.5;
+        dispatch_time_t popTime = dispatch_time(DISPATCH_TIME_NOW, delayInSeconds * NSEC_PER_SEC);
+        dispatch_after(popTime, dispatch_get_main_queue(), ^(void){
+            [self setScanView];
+            
+            [self.waitActivity stopAnimating];
+            
+            [_session startRunning];
+            
+        });
+
+    }
+    else {
+        self.readerView = [[ZBarReaderView alloc] init];
+        self.readerView.frame = CGRectMake(m_orign_x, m_orign_y, UI_IOS_WINDOW_WIDTH-2*m_orign_x, UI_IOS_WINDOW_WIDTH);
+        
+        self.readerView.readerDelegate = self;
+        
+        //关闭闪光灯
+        self.readerView.torchMode = 0;
+        
+        //
+        [self openWaitActivity];
+        
+        double delayInSeconds = 1.5;
+        dispatch_time_t popTime = dispatch_time(DISPATCH_TIME_NOW, delayInSeconds * NSEC_PER_SEC);
+        dispatch_after(popTime, dispatch_get_main_queue(), ^(void){
+            
+            [self.waitActivity stopAnimating];
+            
+            self.readerView.frame =CGRectMake(m_orign_x, m_orign_y, UI_IOS_WINDOW_WIDTH-2*m_orign_x, UI_IOS_WINDOW_WIDTH-2*m_orign_x);
+            [self.view addSubview:self.readerView];
+            [self setScanView];
+            [self.readerView start];
+        });
+
+    }
+}
+
+-(void)openWaitActivity
+{
+   
+    if (!self.waitActivity) {
+        self.waitActivity = [[UIActivityIndicatorView alloc] initWithFrame:CGRectMake(UI_IOS_WINDOW_WIDTH/2, (UI_IOS_WINDOW_WIDTH + m_orign_y - 2*m_orign_x - 10)/2, 0, 0)];
+        self.waitActivity.activityIndicatorViewStyle = UIActivityIndicatorViewStyleWhite;
+        self.waitActivity.color = [UIColor blackColor];
+        
+        [self.view addSubview:self.waitActivity];
+    }
+    
+    self.waitActivity.hidesWhenStopped = YES;
+
+    [self.waitActivity startAnimating];
+}
+
+//初始化扫描界面
+-(void)setScanView{
+    
+    self.view.backgroundColor = [UIColor grayColor];
+    
+    UIImageView *imageView = [[UIImageView alloc]initWithFrame:CGRectMake(m_orign_x, m_orign_y, UI_IOS_WINDOW_WIDTH-2*m_orign_x, UI_IOS_WINDOW_WIDTH-2*m_orign_x)];
+    imageView.image = [UIImage imageNamed:@"pick_bg"];
+    [self.view addSubview:imageView];
+    
+    
+    upOrDown = NO;
+    num =0;
+    _line = [[UIImageView alloc] initWithFrame:CGRectMake(50, 60, 220, 2)];
+    _line.image = [UIImage imageNamed:@"line.png"];
+    [self.view addSubview:_line];
+    
+    
+    time = [NSTimer scheduledTimerWithTimeInterval:.02 target:self selector:@selector(animating) userInfo:nil repeats:YES];
+}
+
+
+-(void)animating
+{
+    if (upOrDown == NO) {
+        num++;
+        _line.frame = CGRectMake(30, 70+2*num, UI_IOS_WINDOW_WIDTH-60, 2);
+        if (2*num == 260) {
+            upOrDown = YES;
+        }
+    }
+    else {
+        num--;
+        _line.frame = CGRectMake(30, 70+2*num, UI_IOS_WINDOW_WIDTH-60, 2);
+        if (num == 0) {
+            upOrDown = NO;
+        }
+    }
+}
+
+#pragma mark    ios7 以下 调用 ZBarReadViewDelegate
+-(void)readerView:( ZBarReaderView *)readerView didReadSymbols:( ZBarSymbolSet *)symbols fromImage:( UIImage *)image
+
+{
+    [time invalidate];
+    [self.readerView stop];
+    [self.waitActivity stopAnimating];
+    const zbar_symbol_t *symbol = zbar_symbol_set_first_symbol (symbols. zbarSymbolSet );
+    
+    NSString *symbolStr = [ NSString stringWithUTF8String : zbar_symbol_get_data (symbol)];
+    
+    [self doResult:symbolStr];
+    
+    self.readerView.torchMode = 0;
+    
+    NSLog(@"ios5:%@",symbolStr);
+    
+}
+
+#pragma mark __ios7  AVCaptureMetadataOutputObjectsDelegate
+-(void)captureOutput:(AVCaptureOutput *)captureOutput didOutputMetadataObjects:(NSArray *)metadataObjects fromConnection:(AVCaptureConnection *)connection
+{
+    NSString *stringValue;
+    
+    if ([metadataObjects count] > 0)
+    {
+        AVMetadataMachineReadableCodeObject * metadataObject = [metadataObjects objectAtIndex:0];
+        stringValue = metadataObject.stringValue;
+    }
+    
+    [_session stopRunning];
+    [time invalidate];
+    [self.waitActivity stopAnimating];
+    
+    [self doResult:stringValue];
+    
+    NSLog(@"ios7:%@",stringValue);
+
+    [self dismissViewControllerAnimated:YES completion:nil];
+
+}
+
+//扫描结果处理
+-(void)doResult:(NSString*)result
+{
+    if (isRunning) {
+        return;
+    }
+    isRunning = YES;
+    _line.hidden = YES;
+    
+    NSLog(@"结果已处理");
+    
+    //判断是否为签到二维码
+    if (result != nil) {
+        NSArray *array = [result componentsSeparatedByString:@":"];
+        if (array && array.count == 3) {
+            
+            NSString *flag = [array objectAtIndex:1];
+            
+            if ([flag isEqualToString:@"signin"]) {
+                
+                if (!m_pUpdataDataListerner) {
+                    m_pUpdataDataListerner = new CMTrainQRSignUpdateDataListener();
+                }
+                
+                NSString *resultSid = [array objectAtIndex:2];
+                
+                if ( resultSid.length == 0 ) {
+                    return;
+                }
+                
+                string ssid = string([resultSid UTF8String]);
+                
+                //判断该二维码是否为上个页面传过来的签到的二维码
+                if (self.signControl) {
+                    if (![[NSString stringWithUTF8String:curItem->sID.c_str()] isEqualToString:resultSid]) {
+                        
+//                        [self callBack:I(@"二维码错误")];
+//                        return;
+                        curItem->sID = ssid;
+                        stateFlag = 1; //往后push
+                    }else
+                        stateFlag = 0; //往前pop
+                }
+                else if (self.signViewControl) {
+                    curItem = new TTrainSignInItem();
+                    curItem->sID = ssid;
+                }
+                
+                curItem->SetListener(NULL, m_pUpdataDataListerner);
+                curItem->SetUserData((__bridge void*)self);
+                
+                curItem->Cancel();
+                if (curItem->SignInTrain()) {
+                    self.waitActivity.frame = _preview.frame;
+                    [self.waitActivity startAnimating];
+                }
+
+               
+                return;
+                
+            }
+            else if ([flag isEqualToString:@"course"])
+            {
+                TClassItem item;
+                item.nModel = 0;
+                strcpy(item.sID, [[array objectAtIndex:2] UTF8String]);
+                strcpy(item.sFlag, "course");
+                
+                CMCourseDetailControl* coursedetailControl = [[CMCourseDetailControl alloc] init];
+                [coursedetailControl setInfo:item];
+                [self.navigationController pushViewController:coursedetailControl animated:YES];
+                [self performSelector:@selector(removeLoadingPushView) withObject:self afterDelay:.3];
+                
+                
+                return;
+            }
+            
+            
+        }
+        
+    }
+ 
+    [self callBack:I(@"二维码不匹配")];
+}
+
+- (void)removeLoadingPushView{
+    int nRow = -1;
+    
+    for (int i = 0; i < [self.navigationController.viewControllers count]; i++)
+    {
+        if ([[self.navigationController.viewControllers objectAtIndex:i] isKindOfClass:[CMSearchQRCode class]])
+        {
+            nRow = i;
+            break;
+        }
+    }
+    NSMutableArray *pMtbArray = [[NSMutableArray alloc] initWithArray:self.navigationController.viewControllers];
+    if ([pMtbArray count] > nRow) {
+        [pMtbArray removeObjectAtIndex:nRow];
+    }
+    
+    
+    [self.navigationController setViewControllers:pMtbArray animated:NO];
+    
+}
+
+
+-(void)callBack:(NSString *)message
+{
+    //using CMAlertView
+    WEAKSELF;
+    CMAlertView *alert = [[CMAlertView alloc] initWithTitle:nil message:message cancelButtonTitle:nil otherButtonTitles:I(@"确定") completionBlock:^(NSUInteger buttonIndex, CMAlertView *alertView) {
+        STRONGSELF;
+        if (buttonIndex == BUTTON_CONFIRM_TAG){
+            if (sself.signControl && stateFlag == 1 && [message isEqualToString:I(@"签到成功")])
+            {
+                CMTrainDetailSignController *signDetailControl = [[CMTrainDetailSignController alloc]init];
+                [signDetailControl setInfo:*curItem];
+                [signDetailControl setIsSweepPush:YES];
+                
+                [sself.TrainSignView automaticRefresh];
+                [sself.navigationController pushViewController:signDetailControl animated:YES];
+                
+            }
+            else if (sself.signControl && stateFlag == 0 && [message isEqualToString:I(@"签到成功")])
+            {
+                [sself.signControl setInfo:*curItem];
+                [sself.signControl callBack];
+                
+                [sself.navigationController popViewControllerAnimated:YES];
+            }
+            else if (sself.signViewControl && [message isEqualToString:I(@"签到成功")])
+            {
+                [sself.signViewControl->listView automaticRefresh];
+                
+                CMTrainDetailSignController *signDetailControl = [[CMTrainDetailSignController alloc]init];
+                [signDetailControl setInfo:*curItem];
+                [signDetailControl setIsSweepPush:YES];
+                
+                [sself.navigationController pushViewController:signDetailControl animated:YES];
+            }
+            else
+            {
+                [sself.navigationController popViewControllerAnimated:YES];
+            }
+        }
+        else if (buttonIndex == BUTTON_CANCEL_TAG){
+            
+        }
+    }];
+    [alert setDisabledOutSide:YES];
+    [alert show];
+}
+
+-(void)callError
+{
+    WEAKSELF;
+    CMAlertView *alert = [[CMAlertView alloc] initWithTitle:nil message:I(@"签到失败,请与管理员联系") cancelButtonTitle:nil otherButtonTitles:I(@"确定") completionBlock:^(NSUInteger buttonIndex, CMAlertView *alertView) {
+        STRONGSELF;
+        if (buttonIndex == BUTTON_CONFIRM_TAG){
+            [sself.navigationController popViewControllerAnimated:YES];
+        }
+        else if (buttonIndex == BUTTON_CANCEL_TAG){
+        }
+    }];
+    [alert setDisabledOutSide:YES];
+    [alert show];
+}
+
+- (void)didReceiveMemoryWarning {
+    [super didReceiveMemoryWarning];
+    // Dispose of any resources that can be recreated.
+}
+
+
+
+@end

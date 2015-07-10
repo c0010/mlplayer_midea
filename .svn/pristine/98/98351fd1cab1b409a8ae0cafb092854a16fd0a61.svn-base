@@ -1,0 +1,15 @@
+/*
+============================================================================
+ Name		: bld.inf
+ Author	  : bh
+ Copyright   : www.wunding.com
+ Description : This file provides the information required for building the
+				whole of a network.
+============================================================================
+*/
+
+PRJ_PLATFORMS
+DEFAULT
+
+PRJ_MMPFILES
+network.mmp

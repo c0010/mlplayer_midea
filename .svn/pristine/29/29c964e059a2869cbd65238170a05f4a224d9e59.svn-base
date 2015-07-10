@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<model userDefinedModelVersionIdentifier="" type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="5064" systemVersion="13F34" minimumToolsVersion="Xcode 4.3" macOSVersion="Automatic" iOSVersion="Automatic">
+    <entity name="CMCourseMessageItem" syncable="YES">
+        <attribute name="desc" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="flag" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="icon" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="model" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="sID" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="title" optional="YES" attributeType="String" syncable="YES"/>
+        <relationship name="messagegroupinfo" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="CMGroupMessageItem" inverseName="coursemessage" inverseEntity="CMGroupMessageItem" syncable="YES"/>
+        <relationship name="messageinfo" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="CMMessageItem" inverseName="coursemessage" inverseEntity="CMMessageItem" syncable="YES"/>
+    </entity>
+    <entity name="CMDialogueItem" representedClassName="CMDialogueItem" syncable="YES">
+        <attribute name="flag" optional="YES" attributeType="Integer 32" defaultValueString="0" syncable="YES"/>
+        <attribute name="fromID" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="fromJID" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="fromName" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="icon" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="isJoined" optional="YES" attributeType="Boolean" syncable="YES"/>
+        <attribute name="lastMessage" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="password" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="roomID" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="roomJID" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="roomName" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="sendTime" optional="YES" attributeType="Date" syncable="YES"/>
+        <attribute name="unread" optional="YES" attributeType="Integer 32" defaultValueString="0" syncable="YES"/>
+    </entity>
+    <entity name="CMGroupItem" syncable="YES">
+        <attribute name="desc" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="icon" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="isJoined" optional="YES" attributeType="Boolean" defaultValueString="0" syncable="YES"/>
+        <attribute name="password" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="roomID" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="roomJID" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="roomName" optional="YES" attributeType="String" syncable="YES"/>
+    </entity>
+    <entity name="CMGroupMessageItem" representedClassName="CMGroupMessageItem" syncable="YES">
+        <attribute name="content" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="fromID" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="fromJID" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="fromName" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="icon" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="isFromMe" optional="YES" attributeType="Boolean" syncable="YES"/>
+        <attribute name="isShowSendTime" optional="YES" attributeType="Boolean" defaultValueString="0" syncable="YES"/>
+        <attribute name="mID" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="nickName" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="roomID" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="roomJID" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="roomName" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="sendTime" optional="YES" attributeType="Date" syncable="YES"/>
+        <attribute name="sent" optional="YES" attributeType="Integer 32" defaultValueString="0" syncable="YES"/>
+        <attribute name="type" optional="YES" attributeType="Integer 32" defaultValueString="0" syncable="YES"/>
+        <relationship name="coursemessage" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="CMCourseMessageItem" inverseName="messagegroupinfo" inverseEntity="CMCourseMessageItem" syncable="YES"/>
+        <relationship name="imageMessage" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="CMImageMessageItem" inverseName="messagegroupinfo" inverseEntity="CMImageMessageItem" syncable="YES"/>
+        <relationship name="sysgroupmessage" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="CMSysMessageItem" inverseName="messagegroupinfo" inverseEntity="CMSysMessageItem" syncable="YES"/>
+    </entity>
+    <entity name="CMImageMessageItem" representedClassName="CMImageMessageItem" syncable="YES">
+        <attribute name="isVertical" optional="YES" attributeType="Boolean" syncable="YES"/>
+        <attribute name="thumb_url" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="url" optional="YES" attributeType="String" syncable="YES"/>
+        <relationship name="messagegroupinfo" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="CMGroupMessageItem" inverseName="imageMessage" inverseEntity="CMGroupMessageItem" syncable="YES"/>
+        <relationship name="messageinfo" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="CMMessageItem" inverseName="imageMessage" inverseEntity="CMMessageItem" syncable="YES"/>
+    </entity>
+    <entity name="CMMessageItem" representedClassName="CMMessageItem" syncable="YES">
+        <attribute name="content" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="fromJID" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="fromName" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="icon" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="isFromMe" optional="YES" attributeType="Boolean" syncable="YES"/>
+        <attribute name="isShowSendTime" optional="YES" attributeType="Boolean" syncable="YES"/>
+        <attribute name="mID" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="sendTime" optional="YES" attributeType="Date" syncable="YES"/>
+        <attribute name="sent" optional="YES" attributeType="Integer 32" defaultValueString="0" syncable="YES"/>
+        <attribute name="toJID" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="toName" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="type" optional="YES" attributeType="Integer 32" defaultValueString="0" syncable="YES"/>
+        <attribute name="uID" optional="YES" attributeType="String" syncable="YES"/>
+        <relationship name="coursemessage" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="CMCourseMessageItem" inverseName="messageinfo" inverseEntity="CMCourseMessageItem" syncable="YES"/>
+        <relationship name="imageMessage" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="CMImageMessageItem" inverseName="messageinfo" inverseEntity="CMImageMessageItem" syncable="YES"/>
+        <relationship name="sysmessage" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="CMSysMessageItem" inverseName="messageinfo" inverseEntity="CMSysMessageItem" syncable="YES"/>
+    </entity>
+    <entity name="CMSysMessageItem" representedClassName="CMSysMessageItem" syncable="YES">
+        <attribute name="key" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="password" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="rawSenderID" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="rawSenderName" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="roomID" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="roomJID" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="roomName" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="skip" optional="YES" attributeType="Boolean" defaultValueString="0" syncable="YES"/>
+        <attribute name="state" optional="YES" attributeType="Integer 32" defaultValueString="0" syncable="YES"/>
+        <relationship name="messagegroupinfo" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="CMGroupMessageItem" inverseName="sysgroupmessage" inverseEntity="CMGroupMessageItem" syncable="YES"/>
+        <relationship name="messageinfo" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="CMMessageItem" inverseName="sysmessage" inverseEntity="CMMessageItem" syncable="YES"/>
+    </entity>
+    <entity name="CMUser" representedClassName="CMUser" syncable="YES">
+        <attribute name="icon" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="name" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="uid" optional="YES" attributeType="String" syncable="YES"/>
+    </entity>
+    <elements>
+        <element name="CMCourseMessageItem" positionX="-108" positionY="81" width="128" height="163"/>
+        <element name="CMDialogueItem" positionX="-225" positionY="45" width="110" height="240"/>
+        <element name="CMGroupItem" positionX="-108" positionY="135" width="128" height="150"/>
+        <element name="CMGroupMessageItem" positionX="-99" positionY="99" width="128" height="313"/>
+        <element name="CMImageMessageItem" positionX="-108" positionY="135" width="128" height="118"/>
+        <element name="CMMessageItem" positionX="-56" positionY="-19" width="128" height="283"/>
+        <element name="CMSysMessageItem" positionX="-90" positionY="72" width="225" height="210"/>
+        <element name="CMUser" positionX="-99" positionY="144" width="128" height="90"/>
+    </elements>
+</model>

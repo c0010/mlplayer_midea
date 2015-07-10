@@ -1,0 +1,36 @@
+//
+//  CMMailViewController.h
+//  MLPlayer
+//
+//  Created by wmgwd on 13-12-5.
+//  Copyright (c) 2013年 w. All rights reserved.
+//
+
+#import "CMViewController.h"
+#import "cmcommon.h"
+
+class CMRetrievePass;
+class MailSimpleResultListener;
+
+@interface CMMailViewController : CMViewController<UITextFieldDelegate>
+{
+    CMRetrievePass *m_pRetrievePass;
+    MailSimpleResultListener *m_pListener;
+}
+@property(nonatomic,strong) UIButton *nextBtn;
+- (void)showResult:(int)result;
+@end
+
+
+class MailSimpleResultListener : public IMSimpleResultListener
+{
+    void OnRequestFinish(void* UserData, int Result)
+    {
+        CMMailViewController *mailControl = (__bridge CMMailViewController *)UserData;
+        
+        [tool DisimissActivityIndicator];
+        mailControl.nextBtn.enabled = YES;
+        
+        [mailControl showResult:Result];
+    }
+};

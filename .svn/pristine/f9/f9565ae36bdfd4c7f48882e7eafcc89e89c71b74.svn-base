@@ -1,0 +1,242 @@
+//
+//  CMClassCommentView.m
+//  MLPlayer
+//
+//  Created by wangjianbin on 15/6/14.
+//  Copyright (c) 2015年 w. All rights reserved.
+//
+
+#import "CMClassCommentView.h"
+
+@interface CMClassCommentView()<UITextFieldDelegate>
+{
+    
+}
+
+@end
+
+@implementation CMClassCommentView
+
+- (id)initWithFrame:(CGRect)frame
+{
+    self = [super initWithFrame:frame];
+    if (self)
+    {
+        self.backgroundColor = kColorBackground;
+        
+        CGFloat edgeSpace = 15.0;
+        UIFont *textFont = [UIFont systemFontOfSize:14];
+        UIImage *starIma_N = [UIImage imageNamed:@"star_n"];
+        UIImage *starIma_S = [UIImage imageNamed:@"star_s"];
+        
+        starView = [[UIView alloc]initWithFrame:CGRectMake(0, 1, self.bounds.size.width, 78)];
+        starView.backgroundColor = [UIColor whiteColor];
+        [self addSubview:starView];
+        
+        NSString *str = I(@"综合星级");
+        CGSize labSize = [str sizeWithFont:textFont];
+        UILabel *labelStarLevel = [[UILabel alloc]initWithFrame:CGRectMake(0, 0, labSize.width + 20, labSize.height)];
+        labelStarLevel.text = str;
+        labelStarLevel.textColor = [UIColor grayColor];
+        
+        UIImageView *starIma = [[UIImageView alloc]initWithFrame:CGRectMake(0, 0, starIma_N.size.width, starIma_N.size.height)];
+        starIma.image = starIma_S;
+        
+        textFieldStarLevel = [[UITextField alloc]initWithFrame:CGRectMake(edgeSpace, edgeSpace, labelStarLevel.frame.size.width + 50, labSize.height)];
+        textFieldStarLevel.textColor = [UIColor grayColor];
+        textFieldStarLevel.leftView = labelStarLevel;
+        textFieldStarLevel.leftViewMode = UITextFieldViewModeAlways;
+        textFieldStarLevel.rightView = starIma;
+        textFieldStarLevel.rightViewMode = UITextFieldViewModeAlways;
+        textFieldStarLevel.enabled = NO;
+        textFieldStarLevel.borderStyle = UITextBorderStyleNone;
+        textFieldStarLevel.text = I(@"0");
+        [starView addSubview:textFieldStarLevel];
+        
+        UILabel *labelStarPeople = [[UILabel alloc]initWithFrame:CGRectMake(0, 0, labSize.width + 20, labSize.height)];
+        labelStarPeople.text = I(@"评星人数");
+        labelStarPeople.textColor = [UIColor grayColor];
+        
+        textFieldStarPeople = [[UITextField alloc]initWithFrame:CGRectMake(textFieldStarLevel.frame.size.width + edgeSpace + 35, edgeSpace, labelStarPeople.frame.size.width + 60, labSize.height)];
+        textFieldStarPeople.textColor = [UIColor grayColor];
+        textFieldStarPeople.leftView = labelStarPeople;
+        textFieldStarPeople.leftViewMode = UITextFieldViewModeAlways;
+        textFieldStarPeople.enabled = NO;
+        textFieldStarPeople.borderStyle = UITextBorderStyleNone;
+        textFieldStarPeople.text = I(@"0");
+        [starView addSubview:textFieldStarPeople];
+        
+        UILabel *labelMyStars = [[UILabel alloc]initWithFrame:CGRectMake(0, 0, labSize.width + 20, labSize.height)];
+        labelMyStars.text = I(@"自评星级");
+        labelMyStars.textColor = [UIColor grayColor];
+        
+        UIView *starBtnView = [[UIView alloc]initWithFrame:CGRectMake(0, 0, starIma_N.size.width * 5 + 20, starIma_N.size.height)];
+        for (int i =1 ; i <= 5 ; i++)
+        {
+            UIButton *starBtn = [UIButton buttonWithType:UIButtonTypeCustom];
+            [starBtn setFrame:CGRectMake((i - 1) * (starIma_N.size.width + 5), 0, starIma_N.size.width, starIma_N.size.height)];
+            [starBtn setTag:i];
+            [starBtn addTarget:self action:@selector(commitMyStars:) forControlEvents:UIControlEventTouchUpInside];
+            [starBtn setImage:starIma_N forState:UIControlStateNormal];
+            [starBtn setImage:starIma_N forState:UIControlStateHighlighted];
+            [starBtnView addSubview:starBtn];
+        }
+        
+        textFieldMyStar = [[UITextField alloc]initWithFrame:CGRectMake(edgeSpace , edgeSpace + labSize.height + 19, labelMyStars.frame.size.width + starBtnView.frame.size.width, labSize.height)];
+        textFieldMyStar.leftView = labelMyStars;
+        textFieldMyStar.leftViewMode = UITextFieldViewModeAlways;
+        textFieldMyStar.rightView = starBtnView;
+        textFieldMyStar.rightViewMode = UITextFieldViewModeAlways;
+        textFieldMyStar.delegate = self;
+        textFieldMyStar.borderStyle = UITextBorderStyleNone;
+        [starView addSubview:textFieldMyStar];
+        
+        UIView *separatorView = [[UIView alloc]initWithFrame:CGRectMake(0, starView.frame.origin.y + starView.frame.size.height, self.frame.size.width, 8)];
+        separatorView.backgroundColor = [UIColor clearColor];
+        [self addSubview:separatorView];
+        
+        UIView *commentCountView = [[UIView alloc]initWithFrame:CGRectMake(0, separatorView.frame.origin.y + separatorView.frame.size.height, self.frame.size.width, 38)];
+        commentCountView.backgroundColor = [UIColor whiteColor];
+        
+        labelCommentCount = [[UILabel alloc]initWithFrame:CGRectMake(edgeSpace, 0, commentCountView.frame.size.width - edgeSpace, commentCountView.frame.size.height)];
+        labelCommentCount.text = I(@"评论 0");
+        labelCommentCount.textColor = [UIColor grayColor];
+        labelCommentCount.font = textFont;
+        [commentCountView addSubview:labelCommentCount];
+        
+        [self addSubview:commentCountView];
+        
+        self.commentView = [[CMCommentView alloc]initWithFrame:CGRectMake(0, commentCountView.frame.origin.y + commentCountView.frame.size.height + 1, self.frame.size.width, self.frame.size.height - commentCountView.frame.origin.y - commentCountView.frame.size.height)];
+        [self addSubview:self.commentView];
+        
+    }
+    return self;
+}
+
+- (void)commitMyStars:(id)sender
+{
+    int myStars = [(UIButton*)sender tag];
+    
+    for (int i = 1 ; i <= 5 ; i++)
+    {
+        UIButton *starBtn = (UIButton*)[self viewWithTag:i];
+        [starBtn setImage:i <= myStars ? [UIImage imageNamed:@"star_s"] : [UIImage imageNamed:@"star_n"]
+                 forState:UIControlStateNormal];
+        starBtn.enabled = NO;
+    }
+    
+    if (m_commitMyStarsListener == nil)
+    {
+        m_commitMyStarsListener = new CMCLassCommentCommitMyStarsListener;
+    }
+    if (m_commitStar == nil)
+    {
+        m_commitStar = new TClassItem;
+    }
+    m_commitStar->SetUserData(BridgeObjectToC(self));
+    m_commitStar->SetListener(nil, nil, m_commitMyStarsListener);
+    utf8ncpy(m_commitStar->sID, m_CourseInfo->sID, 64);
+    if (m_commitStar->CommitStar(myStars))
+    {
+        [tool ShowActivityIndicator:self];
+    }
+}
+
+- (void)reflashCommentStar
+{
+    [tool ShowAlert:I(@"评星成功")];
+    m_CourseInfo->Update();
+    self.myStars = m_CourseInfo->nMyStar;
+}
+
+- (BOOL)textFieldShouldBeginEditing:(UITextField *)textField
+{
+    return NO;
+}
+
+#pragma mark - Value Setting
+
+- (void)setStarLevel:(NSString *)starLevel
+{
+    _starLevel = starLevel;
+    if (textFieldStarLevel != nil)
+    {
+        textFieldStarLevel.text = starLevel.length <= 0 ? I(@"0") : starLevel;
+    }
+}
+
+- (void)setStarPeople:(NSInteger)starPeople
+{
+    _starPeople = starPeople;
+    if (textFieldStarPeople != nil)
+    {
+        textFieldStarPeople.text = [NSString stringWithFormat:@"%li",starPeople];
+    }
+}
+
+- (void)setCommentCount:(NSInteger)commentCount
+{
+    _commentCount = commentCount;
+    if (labelCommentCount != nil)
+    {
+        labelCommentCount.text = [NSString stringWithFormat:@"%@%li",I(@"评论 "),commentCount];
+    }
+}
+
+- (void)setMyStars:(NSInteger)myStars
+{
+    _myStars = myStars;
+    if (textFieldMyStar != nil)
+    {
+        if (myStars > 0)
+        {
+            for (int i = 1 ; i <= 5 ; i++)
+            {
+                UIButton *starBtn = (UIButton*)[self viewWithTag:i];
+                [starBtn setImage:i <= myStars ? [UIImage imageNamed:@"star_s"] : [UIImage imageNamed:@"star_n"]
+                         forState:UIControlStateNormal];
+                starBtn.enabled = myStars > 0 ? NO : YES;
+            }
+        }
+    }
+}
+
+#pragma mark - set Info
+
+-(void)setCourseID:(const char*)courseid type:(NSString*)type
+{
+    m_type = [type copy];
+    
+    utf8ncpy(m_courseid, courseid, 63);
+    
+    if (self.commentView != nil)
+    {
+        [self.commentView setCourseID:courseid type:type];
+    }
+    
+}
+
+-(void)setClassItem:(TClassItem&)item
+{
+    m_CourseInfo = &item;
+    
+    
+    self.starLevel = NSStringFrom(m_CourseInfo->fCommonStar);
+    self.starPeople = m_CourseInfo->nStarCount;
+    self.commentCount = m_CourseInfo->nCommentcount;
+    self.myStars = m_CourseInfo->nMyStar;
+    [self.commentView setBrowserItem:*m_CourseInfo];
+    NSUserDefaults *ud = [NSUserDefaults standardUserDefaults];
+    [ud setObject:@"1" forKey:@"CommentReplyAdd"];
+    [self.commentView viewDidShow];
+}
+
+/*
+// Only override drawRect: if you perform custom drawing.
+// An empty implementation adversely affects performance during animation.
+- (void)drawRect:(CGRect)rect {
+    // Drawing code
+}
+*/
+
+@end

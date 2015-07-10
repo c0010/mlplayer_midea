@@ -1,0 +1,828 @@
+// //////////////////////////////////////////////////////////////////////////////
+//  Copyright (c) 2009,
+//  All rights reserved.
+//  
+//  FileName:
+//  Description:
+//  Author:
+// //////////////////////////////////////////////////////////////////////////////
+
+#include "stdafx.h"
+#include "cmqalist.h"
+#include "tinyxml.h"
+#include "cmsession.h"
+#include "cmglobal.h"
+#include "utf8ncpy.h"
+#include "cmlog.h"
+
+TQAItem::TQAItem()
+{
+    nPV = 0;
+    nVC = 0;
+    nAnswercount = 0;
+    nValue = 0;
+    nAttention = 0;
+    bIsresolved = FALSE;
+    bIsanonymity = FALSE;
+
+}
+
+TQAItem::~TQAItem()
+{
+
+}
+
+void TQAItem::bindItem(sqlite3_stmt *stmt) const
+{
+    sqlite3_bind_text(stmt, 1, sID.c_str(), -1,NULL);
+    
+    sqlite3_bind_text(stmt, 2, sQuestion.c_str(), -1,NULL);
+    
+    sqlite3_bind_text(stmt, 3, sQuestioner_username.c_str(), -1,NULL);
+
+    sqlite3_bind_text(stmt, 4, sQuestioner_fullname.c_str(), -1,NULL);
+
+    
+    if(sQuestioner_icon.c_str() != NULL)
+        sqlite3_bind_text(stmt, 5, sQuestioner_icon.c_str(), -1,NULL);
+    else
+        sqlite3_bind_null(stmt, 5);
+    
+    sqlite3_bind_text(stmt, 6, sPubdate.c_str(), -1,NULL);
+    
+    sqlite3_bind_int(stmt, 7, nVC);
+    
+    sqlite3_bind_int(stmt, 8, nPV);
+    
+    sqlite3_bind_int(stmt, 9, nAnswercount);
+    
+    sqlite3_bind_int(stmt, 10, nValue);
+
+    sqlite3_bind_int(stmt, 11, nAttention);
+    
+    sqlite3_bind_int(stmt, 12, bIsresolved);
+    
+
+    //13为category
+    
+    if(sPic_url.c_str() != NULL)
+        sqlite3_bind_text(stmt, 14, sPic_url.c_str(), -1,NULL);
+    else
+        sqlite3_bind_null(stmt, 14);
+    
+    if(sThumburl.c_str() != NULL)
+        sqlite3_bind_text(stmt, 15, sThumburl.c_str(), -1,NULL);
+    else
+        sqlite3_bind_null(stmt, 15);
+    
+    
+    if(sQcategorytitle.c_str() != NULL)
+        sqlite3_bind_text(stmt, 16, sQcategorytitle.c_str(), -1,NULL);
+    else
+        sqlite3_bind_null(stmt, 16);
+    
+    if(sQcategoryid.c_str() != NULL)
+        sqlite3_bind_text(stmt, 17, sQcategoryid.c_str(), -1,NULL);
+    else
+        sqlite3_bind_null(stmt, 17);
+    
+    sqlite3_bind_int(stmt, 18, bIsanonymity);
+
+
+
+
+    
+    
+}
+
+void TQAItem::fetchItem(sqlite3_stmt *stmt)
+{
+    sID = (const char*)sqlite3_column_text(stmt, 0);
+    
+    sQuestion =(const char*)sqlite3_column_text(stmt, 1);
+    
+    sQuestioner_username = (const char*)sqlite3_column_text(stmt, 2);
+    
+    sQuestioner_fullname = (const char*)sqlite3_column_text(stmt, 3);
+    
+    sQuestioner_icon = (const char*)sqlite3_column_text(stmt, 4);
+    
+    sPubdate = (const char*)sqlite3_column_text(stmt, 5);
+    
+    nVC = sqlite3_column_int(stmt, 6);
+    
+    nPV = sqlite3_column_int(stmt, 7);
+    
+    nAnswercount = sqlite3_column_int(stmt, 8);
+    
+    nValue = sqlite3_column_int(stmt, 9);
+    
+    nAttention = sqlite3_column_int(stmt, 10);
+    
+    bIsresolved= sqlite3_column_int(stmt, 11);
+    
+    //12为category
+    sPic_url =  (const char*)sqlite3_column_text(stmt, 13);
+    
+    sThumburl = (const char*)sqlite3_column_text(stmt, 14);
+    
+    sQcategorytitle = (const char*)sqlite3_column_text(stmt, 15);
+    
+    sQcategoryid = (const char*)sqlite3_column_text(stmt, 16);
+    
+    bIsanonymity= sqlite3_column_int(stmt, 17);
+
+}
+
+CMQAList::CMQAList()
+: CMHandler<TQAItem>()
+, m_pSimpleResultListener(NULL)
+, m_pRatingListener(NULL)
+{
+	memset(m_sCategoryID, 0, 64);
+	memset(sQAID, 0, 64);
+
+	this->SetPaging(TRUE);
+}
+
+CMQAList::~CMQAList()
+{
+}
+
+void CMQAList::SetListener(IMUpdateDataListener* pListener, IMSimpleResultListener* pSimpleResultListener, IMRatingListener* pRatingListener)
+{
+	m_pListener = pListener;
+	m_pSimpleResultListener = pSimpleResultListener;
+	m_pRatingListener = pRatingListener;
+}
+
+
+BOOL CMQAList::GetQuestionbyId(const char* QaId)
+{
+    if (IsRunning())
+		return FALSE;
+	SetPaging(FALSE);
+    
+    
+    sprintf(m_tablename,"");
+
+    
+    char sParam[200];
+    snprintf(sParam,200,"id=%s",QaId);
+    
+	return Request(SERVICE_GETQABYID, sParam);
+
+    
+}
+
+BOOL CMQAList::GetNew()
+{
+	if (IsRunning())
+		return FALSE;
+	SetPaging(TRUE);
+	char param[64];
+    m_nCacheDuration = 0;
+	sprintf(param,"&flag=all");
+    sprintf(m_tablename,"qalist");
+    sprintf(m_sCategoryID, "all");
+
+	return Request(SERVICE_GETQALIST, param);
+}
+
+BOOL CMQAList::GetAllQAByCategoryId(const char* categoryId)
+{
+	if (IsRunning())
+		return FALSE;
+	SetPaging(TRUE);
+    m_nCacheDuration = 0;
+	char param[64];
+	sprintf(param,"&flag=all&categoryid=%s",categoryId);
+    sprintf(m_tablename,"qalist");
+    sprintf(m_sCategoryID, "all");
+    
+	return Request(SERVICE_GETQALIST, param);
+}
+
+BOOL CMQAList::GetHot()
+{
+	if (IsRunning())
+		return FALSE;
+	SetPaging(TRUE);
+	char param[64];
+	sprintf(param,"&flag=hot");
+    sprintf(m_tablename,"qalist");
+    sprintf(m_sCategoryID, "hot");
+
+	return Request(SERVICE_GETQALIST, param);
+}
+
+BOOL CMQAList::GetMyQuestion()
+{
+	if (IsRunning())
+		Cancel();
+
+	SetPaging(TRUE);
+    m_nCacheDuration = 0;
+
+	char param[64];
+	sprintf(param,"&flag=myquestion");
+    sprintf(m_tablename,"qalist");
+    sprintf(m_sCategoryID, "myq");
+
+	return Request(SERVICE_GETQALIST, param);
+}
+
+BOOL CMQAList::GetMyAnswer()
+{
+	if (IsRunning())
+		Cancel();
+
+	SetPaging(TRUE);
+    m_nCacheDuration = 0;
+
+	char param[64];
+	sprintf(param,"&flag=myanswer");
+    sprintf(m_tablename,"qalist");
+    sprintf(m_sCategoryID, "mya");
+	return Request(SERVICE_GETQALIST, param);
+}
+
+BOOL CMQAList::GetMyAttention()
+{
+	if (IsRunning())
+		Cancel();
+
+	SetPaging(TRUE);
+    m_nCacheDuration = 0;
+
+	char param[64];
+	sprintf(param,"&flag=mypv");
+    sprintf(m_tablename,"qalist");
+    sprintf(m_sCategoryID, "mypv");
+
+	return Request(SERVICE_GETQALIST, param);
+}
+
+BOOL CMQAList::GetByCategory(const char* sCategoryID)
+{
+	return FALSE;
+//	if (IsRunning())
+//		return FALSE;
+//
+//	SetPaging(TRUE);
+//	char param[64];
+//	sprintf(param,"&categoryid=%s", sCategoryID);
+////	Clear();
+//	return Request(SERVICE_GETQALISTBYCATEGORY, param);
+}
+
+BOOL CMQAList::Search(const char* sFlag, const char* sCategoryID, const char* sKey)
+{
+	if (IsRunning())
+		return FALSE;
+
+	SetPaging(TRUE);
+	char param[256];
+	const CHAR* pkey = CMGlobal::TheOne().Encode(sKey);
+	snprintf(param,sizeof(param),"&flag=%s&categoryid=%s&key=%s", sFlag, sCategoryID, pkey);
+	SAFEDELETE(pkey);
+	sprintf(m_tablename,"");  //不缓存
+	return Request(SERVICE_SEARCHQA, param);
+}
+
+BOOL CMQAList::NewQuestion(const char* sCategoryID, int nAnonymous, int nValue, const char* sQuestion)
+{
+	if (IsRunning())
+		return FALSE;
+
+	SetPaging(FALSE);
+	char param[1600];
+    const CHAR* pQuestion = CMGlobal::TheOne().Encode(sQuestion);
+	snprintf(param,sizeof(param),"&categoryid=%s&anonymous=%d&value=%d&question=%s", sCategoryID, nAnonymous, nValue, pQuestion);
+	SAFEDELETE(pQuestion);
+	sprintf(m_tablename,"");  //不缓存
+	return Request(SERVICE_NEWQUESTION, param);
+}
+
+BOOL CMQAList::AnswerQuestion(const char* sQuestionID, int nAnonymous, const char* sAnswer)
+{
+	if (IsRunning())
+		return FALSE;
+
+	SetPaging(FALSE);
+	char param[1600];
+    const CHAR* pAnswer = CMGlobal::TheOne().Encode(sAnswer);
+	snprintf(param,sizeof(param),"&questionid=%s&anonymous=%d&answer=%s", sQuestionID, nAnonymous, pAnswer);
+	SAFEDELETE(pAnswer);
+	sprintf(m_tablename,"");  //不缓存
+	return Request(SERVICE_ANSWERQUESTION, param);
+}
+
+BOOL CMQAList::AnswerQuestion(const char* sQuestionID, int nAnonymous, const char* sAnswer, const char* filename)
+{
+	if(!m_pSession)
+		m_pSession = new CMSession(this);
+
+	if(IsRunning())
+		return FALSE;
+
+	char param[640];
+	snprintf(param, 640,"&questionid=%s&anonymous=%d", sQuestionID, nAnonymous);
+
+	CMList<FormData> list;
+
+	if (filename && strlen(filename) > 0)
+	{
+		FormData data;
+		data.key = CMString("pic");
+		data.value = CMString(filename);
+		data.dataType = 2;
+		list.push_back(data);
+	}
+
+	FormData data;
+	data.key = CMString("content");
+	data.value = sAnswer;
+	data.dataType = 1;
+	list.push_back(data);
+
+	m_pSession->CommandPost(SERVICE_ANSWERQUESTION, param, list, SEQUENCE_NORMAL);
+
+	return TRUE;
+}
+
+BOOL CMQAList::AskQuestion(const char* sCategoryID, int nAnonymous, int nValue, const char* sQuestion, const char* filename, const char* expertsID)  //有修改，添加了参数
+{
+	if(!m_pSession)
+		m_pSession = new CMSession(this);
+
+	if(IsRunning())
+		return FALSE;
+
+    char param[640];
+    snprintf(param, 640,"&categoryid=%s&anonymous=%d&value=%d", sCategoryID, nAnonymous, nValue);  //有修改
+
+    CMList<FormData> list;
+
+    if (filename && strlen(filename) > 0)
+    {
+    	FormData data;
+        data.key = CMString("pic");
+        data.value = CMString(filename);
+        data.dataType = 2;
+        list.push_back(data);
+    }
+
+    FormData data1;
+    data1.key = CMString("content");
+    data1.value = sQuestion;
+    data1.dataType = 1;
+    list.push_back(data1);
+
+    FormData data2;
+    data2.key = CMString("categorytitle");
+    data2.value = CMString(sCategoryID);
+    data2.dataType = 1;
+    list.push_back(data2);
+
+    FormData data3;
+    data3.key = CMString("expertsid");
+    data3.value = CMString(expertsID);
+    data3.dataType = 1;
+    list.push_back(data3);
+
+
+    m_pSession->CommandPost(SERVICE_NEWQUESTION, param, list, SEQUENCE_NORMAL);
+    //m_pSession->CommandPost(SERVICE_NEWQUESTION, param, *m_list);   //新添加
+    //SAFEDELETE(m_list);
+
+    return TRUE;
+}
+
+BOOL CMQAList::AttentionQuestion(const char* sQuestionID)
+{
+	if (IsRunning())
+		return FALSE;
+
+	SetPaging(FALSE);
+	char param[640];
+	snprintf(param,sizeof(param),"&questionid=%s", sQuestionID);
+	utf8ncpy(sQAID, sQuestionID, 63);
+	sprintf(m_tablename,"");  //不缓存 ,尽管不缓存，还是要用表名来更新数据，因此不能置空
+	return Request(SERVICE_ADDATTENTION, param);
+}
+
+BOOL CMQAList::DoCreate(sqlite3* db)              //要增加对string sQcategory的处理
+{
+	if (db == NULL)  return FALSE;
+	if (strcmp(m_tablename, "") == 0) return FALSE;
+
+	char *errorMsg;
+	char sql[1024];                              //数据库中添加sQcategorytitle  ，sQcategoryid 两个字段
+	snprintf(sql,sizeof(sql),"CREATE TABLE IF NOT EXISTS %s(_id INTEGER PRIMARY KEY AUTOINCREMENT,id TEXT UNIQUE,question TEXT,questioner_username TEXT,questioner_fullname TEXT,questioner_icon TEXT,pubdate TEXT,vc INTEGER,pv INTEGER,answercount INTEGER,value INTEGER,attention INTEGER,isresolved INTEGER,category TEXT,pic_url TEXT,thumburl TEXT,categorytitle TEXT,categoryid TEXT,isanonymity INTEGER);", m_tablename);
+
+    
+    int i = sqlite3_exec(db, sql, NULL, NULL, &errorMsg);
+
+	if (i==SQLITE_OK) {
+		return TRUE ;
+	}
+	else
+	{
+		CM_ERRP("exec %s failed.error:%s", sql, errorMsg);
+		return FALSE;
+	}
+
+}
+
+BOOL CMQAList::DoRefresh(TQAItem& obj)            //要增加对string sQcategory的处理
+{
+    BOOL ret = FALSE;
+
+    m_mutex.Lock();
+    for (int i = 0; i < m_lstItem->size(); i++) {
+        TQAItem& item = m_lstItem->at(i);
+        
+        if (strcmp(item.sID.c_str(), obj.sID.c_str()) == 0) {
+            obj= item;
+            ret = TRUE;
+            break;
+        }
+    }
+    m_mutex.UnLock();
+    
+    sprintf(m_tablename,"qalist");
+
+	if (strcmp(m_tablename, "") == 0) return FALSE;
+
+	//根据obj的sID属性更新
+	sqlite3_stmt *stmt;
+	CHAR sql[1024];
+	sql[0] = '\0';
+
+	sqlite3*db=CheckTable(m_tablename);
+	if (db == NULL)
+		return FALSE;
+
+	snprintf(sql,sizeof(sql),"SELECT id,question,questioner_username,questioner_fullname,questioner_icon,pubdate,vc,pv,answercount,value,attention,isresolved,category,pic_url,thumburl ,categorytitle,categoryid ,isanonymity FROM %s WHERE id = ?", m_tablename);
+
+	if (sqlite3_prepare_v2(db, sql, -1, &stmt, NULL) == SQLITE_OK)
+	{
+		BindParam(stmt, 1, obj.sID.c_str());
+
+        if (sqlite3_step(stmt) == SQLITE_ROW)
+        {
+
+            
+            obj.fetchItem(stmt);
+            
+        }
+        else
+        {
+        	CM_ERRP("sqlite3_prepare_v2 %s failed.error:%s", sql, sqlite3_errmsg(db));
+        }
+
+        sqlite3_finalize(stmt);
+	}
+	else
+	{
+		CM_ERRP("sqlite3_step %s failed.error:%s", sql, sqlite3_errmsg(db));
+	}
+
+	return ret;
+}
+
+BOOL CMQAList::DoUpdate(const TQAItem& obj)           //要增加对string sQcategory的处理
+{
+    BOOL ret = FALSE;
+
+    //更新对象
+    m_mutex.Lock();
+    for (int i = 0; i < m_lstItem->size(); i++) {
+        TQAItem& item = m_lstItem->at(i);
+        
+        if (strcmp(item.sID.c_str(), obj.sID.c_str()) == 0) {
+            item = obj;
+            ret = TRUE;
+            break;
+        }
+    }
+    m_mutex.UnLock();
+    
+    sprintf(m_tablename,"qalist");
+
+	if (strcmp(m_tablename, "") == 0)
+        return FALSE;
+
+    //保存入数据库
+    sqlite3*db=CheckTable(m_tablename);
+    if(db)
+    {
+		sqlite3_stmt *stmt;
+		CHAR sql[1024];
+		snprintf(sql,sizeof(sql),"UPDATE %s SET id=?, question=?, questioner_username=?, questioner_fullname=?, questioner_icon=?, pubdate=?, vc=?, pv=?, answercount=?, value=?, attention=?, isresolved=?, category=?, pic_url=?, thumburl=? ,categorytitle=?, categoryid=?, isresolved=?,isanonymity=? WHERE id=? ", m_tablename);
+        if (sqlite3_prepare_v2(db, sql, -1, &stmt, NULL) == SQLITE_OK) {
+            obj.bindItem(stmt);
+            sqlite3_bind_text(stmt, 20, obj.sID.c_str(), -1,NULL);
+            if(sqlite3_step(stmt)==SQLITE_DONE)
+            {
+
+            }
+            else {
+            	CM_ERRP("sqlite3_step %s failed.error:%s", sql, sqlite3_errmsg(db));
+            }
+        }
+		else {
+			CM_ERRP("exec %s failed.error:%s", sql, sqlite3_errmsg(db));
+		}
+
+        sqlite3_finalize(stmt);
+    }
+
+    return ret;
+}
+
+BOOL CMQAList::DoPutItem(TiXmlElement* pItem, sqlite3* db, TQAItem& item)     //要增加对string sQcategory的处理
+{
+	BOOL ret = FALSE;
+	const CHAR* pStr = NULL;
+    
+    pStr=pItem->Attribute("categorytitle");
+    if(pStr)
+        item.sQcategorytitle=pStr;                  //新添加，问题类别
+    
+    
+    pStr=pItem->Attribute("categoryid");
+    if(pStr)
+        item.sQcategoryid=pStr;
+    
+	pStr = pItem->Attribute("id");
+	if(pStr)
+        item.sID = pStr;
+
+	pStr = pItem->Attribute("question");
+	if(pStr)
+        item.sQuestion = pStr;
+
+	pStr = pItem->Attribute("questioner_username");
+	if(pStr)
+        item.sQuestioner_username = pStr;
+
+	pStr = pItem->Attribute("questioner_fullname");
+	if(pStr)
+        item.sQuestioner_fullname = pStr;
+	if(strlen(item.sQuestioner_fullname.c_str()) <= 0)
+        item.sQuestioner_fullname = item.sQuestioner_username;
+
+	pStr = pItem->Attribute("questioner_icon");
+	if(pStr)
+        item.sQuestioner_icon = pStr;
+
+	pStr = pItem->Attribute("pubdate");
+	if(pStr)
+        item.sPubdate = pStr;
+
+	pItem->QueryIntAttribute("vc",&item.nVC);
+
+	pItem->QueryIntAttribute("pv",&item.nPV);
+
+	pItem->QueryIntAttribute("answercount",&item.nAnswercount);
+
+	pItem->QueryIntAttribute("value",&item.nValue);
+
+	pItem->QueryIntAttribute("attention",&item.nAttention);
+       int tmp=0;
+    
+	pItem->QueryIntAttribute("isresolved",&  tmp);
+      item.bIsresolved=tmp;
+
+    pItem->QueryIntAttribute("isanonymity",&  tmp);
+    item.bIsanonymity=tmp;
+    
+    //取第一张pic
+    TiXmlElement *pChildItem= pItem->FirstChildElement("pic");
+    if(pChildItem)
+    {
+        pStr = pChildItem->Attribute("url");
+        if(pStr)
+            item.sPic_url = pStr;
+        
+        pStr=NULL;
+        
+        pStr = pChildItem->Attribute("thumburl");
+      	if(pStr)
+            item.sThumburl = pStr;
+    }
+
+	if (strcmp(m_tablename, "") == 0)
+	{
+		//表名为空，不入库，返回成功
+		return TRUE;
+	}
+
+	CHAR sql[1024];
+	sqlite3_stmt *stmt;
+    snprintf(sql,sizeof(sql),"REPLACE INTO %s(id,question,questioner_username,questioner_fullname,questioner_icon,pubdate,vc,pv,answercount,value,attention,isresolved,category,pic_url,thumburl,categorytitle,categoryid,isanonymity) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", m_tablename);
+    if (sqlite3_prepare_v2(db, sql, -1, &stmt, NULL) == SQLITE_OK) {
+        item.bindItem(stmt);
+
+        BindParam(stmt, 13,m_sCategoryID);
+
+        if(sqlite3_step(stmt) == SQLITE_DONE)
+        {
+        	ret = TRUE;
+        }
+        else
+        {
+        	CM_ERRP("exec %s failed.error:%s", sql, sqlite3_errmsg(db));
+        }
+
+        sqlite3_finalize(stmt);
+    }
+    else {
+    	CM_ERRP("exec %s failed.error:%s", sql, sqlite3_errmsg(db));
+    }
+
+    return  TRUE;
+}
+
+BOOL CMQAList::DoGetCacheItems(sqlite3* db)
+{
+	if (strcmp(m_tablename, "") == 0) return FALSE;
+
+	BOOL ret = FALSE;
+	sqlite3_stmt *stmt;
+	CHAR sql[1024];
+	sql[0] = '\0';
+
+	snprintf(sql,sizeof(sql),"SELECT id,question,questioner_username,questioner_fullname,questioner_icon,pubdate,vc,pv,answercount,value,attention,isresolved,category,pic_url,thumburl,categorytitle,categoryid,isanonymity FROM %s WHERE category = ? ORDER BY _id ASC", m_tablename);
+	if (m_bPaging)
+	{
+		//添加page字串
+		snprintf(sql,sizeof(sql),"%s LIMIT %d OFFSET %d", sql, m_nPageSize, (m_nPageNo - 1)*m_nPageSize);
+	}
+
+	if (sqlite3_prepare_v2(db, sql, -1, &stmt, NULL) == SQLITE_OK)
+	{
+
+        if (!m_bPaging || m_nPageNo == 1)
+        {
+        	//如果是第一页，清空表
+        	m_mutex.Lock();
+        	m_lstItem->clear();
+        	m_mutex.UnLock();
+        }
+
+        BindParam(stmt, 1, m_sCategoryID);
+
+        m_mutex.Lock();
+        while(sqlite3_step(stmt) == SQLITE_ROW)
+        {
+        	TQAItem item;
+            
+            item.fetchItem(stmt);
+
+        	m_lstItem->push_back(item);           //从服务器读到的数据，写入数据库，然后把数据库中的数据读到相关结构体中
+        }
+        m_mutex.UnLock();
+
+        sqlite3_finalize(stmt);
+
+        ret = TRUE;
+	}
+
+	if (ret)
+	{
+		//计算总数
+		m_nTotalCount = 0;
+		snprintf(sql,sizeof(sql),"SELECT COUNT(*) FROM %s WHERE category = ?", m_tablename);
+		if (sqlite3_prepare_v2(db, sql, -1, &stmt, NULL) == SQLITE_OK)
+		{
+            
+            BindParam(stmt, 1, m_sCategoryID);
+
+	        if (sqlite3_step(stmt) == SQLITE_ROW)
+	        {
+	        	m_nTotalCount = sqlite3_column_int(stmt, 0);
+	        }
+
+	        sqlite3_finalize(stmt);
+		}
+	}
+
+	return ret;
+}
+
+void CMQAList::DoClear()
+{
+    m_mutex.Lock();
+    if(m_lstItem)
+        m_lstItem->clear();
+	m_mutex.UnLock();
+
+	CHAR sql[1024];
+	sql[0] = '\0';
+	char* errorMsg;
+	sqlite3_stmt *stmt;
+
+    sqlite3* db = CheckTable(m_tablename);
+    
+	snprintf(sql,sizeof(sql),"DELETE FROM %s WHERE category = ?", m_tablename);
+
+	if (sqlite3_prepare_v2(db, sql, -1, &stmt, NULL) == SQLITE_OK)
+	{
+		BindParam(stmt, 1, m_sCategoryID);
+
+		if (sqlite3_step(stmt) != SQLITE_DONE)
+		{
+			CM_ERRP("exec %s failed.error:%s", sql, errorMsg);
+		}
+
+		sqlite3_finalize(stmt);
+	}
+
+}
+
+void CMQAList::OnSessionCmd(unsigned int nCmdID, unsigned int nCode, TiXmlDocument* pDoc)
+{
+	if(nCmdID == SERVICE_GETQALIST || nCmdID == SERVICE_GETQALISTBYCATEGORY || nCmdID == SERVICE_SEARCHQA || nCmdID == SERVICE_GETQABYID)
+    {
+        CMHandler<TQAItem>::OnSessionCmd(nCmdID, nCode, pDoc);
+    }
+	else if(nCmdID == SERVICE_NEWQUESTION || nCmdID == SERVICE_ANSWERQUESTION||nCmdID == SERVICE_NEWQUESTION)
+	{
+		if(m_pSimpleResultListener)
+		{
+			INT32 result = TResult::EUnknownError;
+			if (nCode == MER_OK)
+			{
+				TiXmlElement *pItem = pDoc->RootElement();
+
+				INT32 nErr = -1;
+				pItem->QueryIntAttribute("errno", &nErr);
+				if (nErr == 0)
+					result = TResult::ESuccess;
+				else
+					result = TResult::EUnknownError;
+			}
+			else if(nCode == MERN_INITIALIZE)
+			{
+				result = TResult::ENetDisconnect;
+			}
+			else if(nCode == MERN_OFFLINE)
+			{
+				result = TResult::ENotSupportOffline;
+			}
+			else
+				result = TResult::ENetTimeout;
+			
+			m_pSimpleResultListener->OnRequestFinish(this->m_UserData, result);
+		}		
+	}
+	else if(nCmdID == SERVICE_ADDATTENTION)
+	{
+		if(m_pRatingListener)
+		{
+			INT32 result = TResult::EUnknownError;
+			INT32 nRatting = 0;
+			if (nCode == MER_OK)
+			{
+				TiXmlElement *pItem = pDoc->RootElement();
+
+				INT32 nErr = -1;
+				pItem->QueryIntAttribute("errno", &nErr);
+				if (nErr == 0)
+				{
+					result = TResult::ESuccess;
+					pItem->QueryIntAttribute("pv", &nRatting);
+
+					//修改list里item的attention状态
+					TQAItem item;
+                    item.sID = sQAID;
+					Refresh(item);
+					if (item.nAttention == 0)
+						item.nAttention = 1;
+					else
+						item.nAttention = 0;
+					item.nPV = nRatting;
+					Update(item);
+				}
+				else
+					result = TResult::EUnknownError;
+			}
+			else if(nCode == MERN_INITIALIZE)
+			{
+				result = TResult::ENetDisconnect;
+			}
+			else if(nCode == MERN_OFFLINE)
+			{
+				result = TResult::ENotSupportOffline;
+			}
+			else
+				result = TResult::ENetTimeout;
+
+			m_pRatingListener->OnRating(this->m_UserData, nRatting, result);
+		}
+	}
+
+}

@@ -1,0 +1,358 @@
+//
+//  CMFindgroupViewController.m
+//  MLPlayer
+//
+//  Created by kyp on 14-6-10.
+//  Copyright (c) 2014年 w. All rights reserved.
+//
+
+#import "CMFindgroupViewController.h"
+#import "CMLabel.h"
+#import "CMImage.h"
+#import "CMGroupinfoViewController.h"
+#import "CMGroupInfoExitViewController.h"
+#import "SDWebImage/SDImageCache.h"
+#import "cmfileinfo.h"
+#include "cmsettings.h"
+#import "CMPositionCourseControl.h"
+#import "MLPlayerAppDelegate.h"
+#import "CMGroupMembersCell.h"
+#import "SDWebImage/UIButton+WebCache.h"
+#import "UITableViewCell+Helpper.h"
+#import "CMGroupManager.h"
+
+@interface CMFindgroupViewController ()
+
+@end
+
+@implementation CMFindgroupViewController
+
+#define kCellIdentifier @"com.apple.CMFindgroupControl.CellIdentifier"
+- (id)initWithNibName:(NSString *)nibNameOrNil bundle:(NSBundle *)nibBundleOrNil
+{
+    self = [super initWithNibName:nibNameOrNil bundle:nibBundleOrNil];
+    if (self) {
+        // Custom initialization
+    }
+    return self;
+}
+
+- (void)viewDidLoad
+{
+    [super viewDidLoad];
+    
+    self.openAutoKeyboard = YES;
+    
+    m_pGroup = new CMGroup();
+
+    // Do any additional setup after loading the view.
+    theSearchBar=[[CMSearchBar alloc]initWithFrame:CGRectMake(0, 0, 320, 40)];
+    theSearchBar.delegate=self;
+    [theSearchBar setPlaceholder:I(@"搜索")];
+    
+    CGRect f = [[self view] bounds];
+	f.size.height = UI_IOS_WINDOW_HEIGHT - 64 - (48-10)+38;
+    theTableView=[[UITableView alloc]initWithFrame:f  style:UITableViewStylePlain];
+    theTableView.delegate = self;
+	theTableView.dataSource = self;
+    theTableView.scrollEnabled = YES;
+    theTableView.tableHeaderView=theSearchBar;
+    theTableView.backgroundColor = [UIColor clearColor];
+    [self.view addSubview:theTableView];
+    if ([theTableView respondsToSelector:@selector(setSeparatorInset:)]) {
+        [theTableView setSeparatorInset:UIEdgeInsetsZero];
+    }
+    bgview = [[UIView alloc] initWithFrame:CGRectMake(0, 40, f.size.width, f.size.height)];
+    [bgview addSubview:[tool generatePlaceholderView:Placeholder_NoDataText on:bgview]];
+    [bgview setBackgroundColor:[UIColor clearColor]];
+    bgview.userInteractionEnabled=NO;
+    [theTableView addSubview:bgview];
+    [theTableView setSeparatorStyle:UITableViewCellSeparatorStyleNone];
+}
+
+
+#pragma mark - Lifecycle
+
+-(void)viewWillAppear:(BOOL)animated
+{
+    [super viewWillAppear:animated];
+	NSIndexPath *tableSelection = [theTableView indexPathForSelectedRow];
+	[theTableView deselectRowAtIndexPath:tableSelection animated:NO];
+	// Set the navbar style to its default color for the list view.
+	self.navigationController.navigationBar.barStyle = UIBarStyleDefault;
+}
+
+
+-(void)viewWillDisappear:(BOOL)animated
+{
+    [theSearchBar resignFirstResponder];
+    [super viewWillDisappear:animated];
+}
+
+-(void)viewDidDisappear:(BOOL)animated
+{
+
+    [theTableView resignFirstResponder];
+    [super viewDidDisappear:animated];
+}
+
+
+- (void)keyboardWillShow:(NSNotification *)notification
+{
+    
+}
+
+#pragma mark other operator
+-(void)keyboardWillHide:(NSNotification *)aNotification
+{
+
+}
+
+-(void)RershTableList:(UITableViewCell *)mycell
+{
+    if (!SETTING.GetAutoLoadMore()) {
+        [btnMore setHidden:YES];
+    }
+    
+    dwActiveView.frame = CGRectMake((UI_IOS_WINDOW_WIDTH-150)/2, (44-20)/2, 20, 20);
+    
+    UILabel * lblview = [[UILabel alloc] initWithFrame:CGRectMake((UI_IOS_WINDOW_WIDTH-150)/2+25, (44-20)/2, 150, 20)];
+    lblview.text = I(@"加载更多...");// @"加载更多...";
+    lblview.backgroundColor = [UIColor clearColor];
+    
+    [mycell.contentView addSubview:dwActiveView];
+    [mycell.contentView addSubview:lblview];
+    CMRELEASE(lblview);
+    
+    mycell.selectionStyle = UITableViewCellSelectionStyleNone;
+    mycell.accessoryType = UITableViewCellAccessoryNone;
+    
+    [dwActiveView startAnimating];
+    
+    m_pGroup->RequestMore();
+}
+
+-(void)RershTableList
+{
+    if(m_pGroup)
+        m_pGroup->RequestMore();
+}
+
+#pragma mark UITableView delegate methods
+
+- (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    [theSearchBar resignFirstResponder];
+
+    TGroupInfoItem item;
+    m_pGroup->GetItem(indexPath.row, item);
+    
+    CMGroupinfoViewController *control=[[CMGroupinfoViewController alloc]init];
+    [control getItem:item];
+    control.title = I(@"群信息");
+    control.modalTransitionStyle = UIModalTransitionStyleFlipHorizontal;
+
+    control.navigationController.navigationBarHidden = NO;
+    control.tabBarController.tabBar.hidden = YES;
+    control.hidesBottomBarWhenPushed = YES;
+    [self.navigationController pushViewController:control animated:YES];
+    
+}
+
+
+#pragma mark UITableView data source methods
+
+// tell our table how many sections or groups it will have (always 1(our case)
+- (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView
+{
+	return 1;
+}
+
+// tell our table how many rows it will have,(our case the size of our menuList
+- (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
+{
+    if (m_pGroup->IsEnd()) {
+        return m_pGroup->GetItemCount();
+    }else
+        return m_pGroup->GetItemCount()+1;
+    
+}
+
+
+// tell our table what kind of cell to use and its title for the given row
+- (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    CMGroupMembersCell *cell = [tableView dequeueReusableCellWithIdentifier:kCellIdentifier];
+    if (cell == nil) {
+        cell = [[CMGroupMembersCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:kCellIdentifier] ;
+        
+        cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
+        cell.selectionStyle = UITableViewCellSelectionStyleGray;
+    }
+    
+    if (indexPath.row == m_pGroup->GetItemCount() &&  m_pGroup->GetItemCount()!= 0) {
+        UITableViewCell* cellmore = [tableView dequeueReusableCellWithIdentifier:@"infocommentmore"];
+        if (cellmore == nil) {
+            cellmore = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@"infocommentmore"];
+        }
+        
+        if(SETTING.GetAutoLoadMore())
+        {
+            [self RershTableList:cellmore];
+        }
+        else
+        {
+            
+            btnMore = [UIButton buttonWithType:UIButtonTypeCustom];
+            
+            [btnMore setImage:[UIImage imageNamed:@"Load_More_nor"] forState:UIControlStateNormal];
+            
+            [btnMore setImage:[UIImage imageNamed:@"Load_More_sel"] forState:UIControlStateHighlighted];
+            
+            [btnMore addTarget:self action:@selector(RershTableList) forControlEvents:UIControlEventTouchUpInside];
+            
+            [btnMore setHidden:NO];
+            
+            UIImage * loadMorePic = [UIImage imageNamed:@"Load_More_sel"];
+            
+            [btnMore setFrame:CGRectMake(0, 0, loadMorePic.size.width, loadMorePic.size.height)];
+            
+            [btnMore setCenter:CGPointMake(UI_IOS_WINDOW_WIDTH/2, cellmore.contentView.frame.size.height/2)];
+            
+            [cellmore.contentView addSubview:btnMore];
+            
+            //加上"加载更多..."文字说明
+            UILabel *lbl_LoadMore = [[UILabel alloc]init] ;
+            
+            CGSize size_LoadMore =[I(@"加载更多...") sizeWithFont:[UIFont systemFontOfSize:16] constrainedToSize:CGSizeMake(NSIntegerMax, cellmore.contentView.frame.size.height) lineBreakMode:NSLineBreakByCharWrapping];
+            [lbl_LoadMore setText:I(@"加载更多...")];
+            [lbl_LoadMore setFont:[UIFont systemFontOfSize:16]];
+            
+            [lbl_LoadMore setFrame:CGRectMake(0, 0, size_LoadMore.width, size_LoadMore.height)];
+            [lbl_LoadMore setCenter:CGPointMake(UI_IOS_WINDOW_WIDTH/2-20, cellmore.contentView.frame.size.height/2)];
+            [btnMore addSubview:lbl_LoadMore];
+            
+            
+            
+            
+            [cellmore.contentView setBackgroundColor: UIColorRGB(0xd8dbdc)];
+            cellmore.selectionStyle = UITableViewCellSelectionStyleNone;
+            cellmore.accessoryType = UITableViewCellAccessoryNone;
+        }
+        return cellmore;		
+    }
+    
+    
+    TGroupInfoItem item;
+    
+    if(m_pGroup && m_pGroup->GetItem(indexPath.row, item))
+    {
+
+        [cell.headButton sd_setImageWithURL:[NSURL URLWithString:[NSString stringWithUTF8String:item.sIconUrl.c_str()]] forState:UIControlStateNormal placeholderImage:DefaultGroupImage];
+        cell.titlelabel.text = [NSString stringWithUTF8String:item.sName.c_str()];
+        cell.cellType = CMGroupMembersCellTypeMemberDefault;
+    }
+    [cell setSection:m_pGroup->GetItemCount() atIndex:indexPath.row height:55];
+    return cell;
+}
+
+- (CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    if (indexPath.row == m_pGroup->GetItemCount()) {
+        return 44;
+    }
+	return 55;
+}
+
+- (void)scrollViewDidScroll:(UIScrollView *)scrollView{
+    
+    [theSearchBar resignFirstResponder];
+
+}
+  
+    
+#pragma UISearchDisplayDelegate
+- (void)searchBar:(UISearchBar *)searchBar textDidChange:(NSString *)searchText
+{
+    if([searchText isEqualToString:@""]){
+        
+        [self clearAllData];
+        
+        bgview.hidden = NO;
+        
+    }else{
+    
+        [self clearAllData];
+
+        
+        bgview.hidden = YES;
+        
+        [tool ShowActivityIndicator:theTableView at:CGPointMake((UI_IOS_WINDOW_WIDTH-20)/2,80)];
+        
+        [[CMGroupManager manager] doSearchGroup:searchText success:^(CMGroup *group) {
+            
+            m_pGroup = group;
+            
+            [theTableView reloadData];
+            
+            bgview.hidden = !(m_pGroup->GetItemCount() == 0);
+            
+            
+        } failure:^(int errorCode) {
+            
+            [self clearAllData];
+            
+            bgview.hidden = NO;
+        }];
+    }
+}
+
+- (void)clearAllData{
+
+    m_pGroup = new CMGroup();
+    
+    [theTableView reloadData];
+}
+
+- (BOOL)searchBar:(UISearchBar *)searchBar shouldChangeTextInRange:(NSRange)range replacementText:(NSString *)text
+{
+   
+    return YES;
+}
+
+//- (void)scrollViewWillBeginDragging:(UIScrollView *)scrollView
+//{
+//    [theSearchBar resignFirstResponder];
+//}
+
+- (void)searchBarSearchButtonClicked:(UISearchBar *)searchBar
+{
+    [searchBar resignFirstResponder];
+}
+
+- (void)searchBarTextDidBeginEditing:(UISearchBar *)searchBar
+{
+    searchBar.placeholder = I(@"输入群名称或群编号");
+    [searchBar setShowsCancelButton:YES animated:YES];
+}
+
+- (void)searchBarTextDidEndEditing:(UISearchBar *)searchBar{
+    
+    searchBar.placeholder = I(@"搜索");
+    [searchBar setShowsCancelButton:NO animated:YES];
+}
+
+- (void)searchBarCancelButtonClicked:(UISearchBar *)searchBar
+{
+    [searchBar resignFirstResponder];
+}
+
+- (void)didReceiveMemoryWarning
+{
+    [super didReceiveMemoryWarning];
+    // Dispose of any resources that can be recreated.
+}
+
+
+
+@end

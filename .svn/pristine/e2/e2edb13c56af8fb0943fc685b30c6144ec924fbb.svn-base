@@ -1,0 +1,138 @@
+//
+//  CMViewController.h
+//  OCplusplus
+//
+//  Created by Tim on 13-1-19.
+//  Copyright 2011 __MyCompanyName__. All rights reserved.
+//
+
+#import <UIKit/UIKit.h>
+#import "CMViewController.h"
+#include "cmcommon.h"
+#include "cmwebimage.h"
+#include "UIProgressBar.h"
+#import "cmquestionupload.h"
+#import "cmupload.h"
+
+class CMPersonGetImageListener;
+class CMMyInfoUpdateLister;
+class CMMyInfoUploadLister;
+@interface CMPersonController : CMViewController
+<UITableViewDelegate,UITableViewDataSource,UIActionSheetDelegate,
+UINavigationControllerDelegate,UIImagePickerControllerDelegate>
+{
+
+	UIImageView* headview;
+	CMPersonGetImageListener *m_pGetImageListener;
+    
+    UIActivityIndicatorView* activityView;
+    
+    //UIButton* btnRefresh;
+    CMMyInfoUpdateLister *m_pMyinfoListener;
+    CMMyInfoUploadLister *m_pMyinfoListener2;
+    
+    UITableView* tableviewlist;
+    
+    BOOL updating;
+    UILabel* jobnumber;
+    UILabel*     dep;
+    UILabel* credit;
+    UILabel* value;
+    
+    UIButton* rankBtn;
+    
+    UIButton* headimageview;
+    NSMutableDictionary * lbdict;
+    
+    UIProgressBar* rankPorgress;
+    
+    UILabel* rankPoint;
+    
+    
+    UIScrollView* scrollView;
+    
+    NSString *strImageName;
+    
+    CMQuestionUpload* m_pQaUpload;
+}
+@property(nonatomic,strong)UILabel* lblName;
+@property(nonatomic,assign)BOOL isDataLoad;
+@property(nonatomic,strong)UIButton *bgView;
+@property(nonatomic,assign)BOOL isPressedBgView;
+
+
+- (IBAction)changeHeadImage:(id)sender;
+-(void)refreshimage;
+-(void)updateView;
+-(UILabel*)GetLabel:(NSString*)title textcolor: (UIColor*)textcolor fontsize:(int)size;
+-(void)gotoTitleInfo;
+- (void)stopRefresh;
+
+
+
+@end
+
+class CMPersonGetImageListener:public IMGetImageListener
+{
+	void OnFinish(void* UserData, int Result, int nID)
+	{
+		CMPersonController* personControl = (__bridge CMPersonController*)UserData;
+		
+		if (Result == TResult::ESuccess || Result == TResult::ENothing)
+		{
+			[personControl refreshimage];
+		}else {
+		}
+	}
+};
+
+class CMMyInfoUpdateLister : public IMUpdateDataListener
+{
+    void OnUpdateDataProgress(void* UserData, int nPercent)
+	{
+        
+	}
+	
+    void OnUpdateDataFinish(void* UserData, int Result)
+	{
+        
+		if (![tool GetIsBack]) {
+			
+			CMPersonController* control= (__bridge CMPersonController*)UserData;
+            
+            if (Result == TResult::ESuccess)
+            {
+                //先设置值
+                control.isDataLoad = YES;
+                
+                //再刷新数据
+                [control stopRefresh];
+                
+                [[NSNotificationCenter defaultCenter] postNotificationName:CM_NotificationCenter_HeadImageUpdate object:nil];
+            }
+            else
+            {
+                [tool ShowError:Result];
+                [control stopRefresh];
+                
+            }
+		}
+	}
+};
+
+class CMMyInfoUploadLister : public IMSimpleResultListener
+{
+    void OnRequestFinish(void* UserData, int Result)
+    {
+        if (Result==TResult::ESuccess) {
+            [tool ShowAlert:I(@"上传成功")];
+            [[NSNotificationCenter defaultCenter] postNotificationName:CM_NotificationCenter_HeadImageUpload
+                                                                object:nil
+                                                              userInfo:nil];
+        }else
+        {
+            [tool ShowAlert:@"提交失败!"];
+        }
+    }
+};
+

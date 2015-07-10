@@ -1,0 +1,76 @@
+/*
+============================================================================
+ Name        : business_model.mmp
+ Author      : 
+ Version     :
+ Copyright   : Your copyright notice
+ Description : This is the project specification file for cximage.
+============================================================================
+*/
+TARGET                                  business_model.lib 
+TARGETTYPE                              lib 
+UID                                     0x0 0xe237677f 
+SECUREID                                0xea2c28a0
+
+USERINCLUDE                             ..\..
+USERINCLUDE                             ..\..\symbian
+USERINCLUDE                             ..\..\..
+USERINCLUDE                             ..\..\..\include
+USERINCLUDE                             ..\..\..\network
+USERINCLUDE                             ..\..\..\network\symbian
+USERINCLUDE                             ..\..\..\tools
+USERINCLUDE                             ..\..\..\xmlparser
+
+SYSTEMINCLUDE                           \epoc32\include 
+SYSTEMINCLUDE                           \epoc32\include\libc
+
+SOURCEPATH                              ..\..
+SOURCE                                  cmbrowser.cpp
+SOURCE                                  cmcategory.cpp
+SOURCE                                  cmcomment.cpp
+SOURCE                                  cmcontacts.cpp
+SOURCE                                  cmcontenthandler.cpp
+SOURCE                                  cmcoursedownload.cpp
+SOURCE                                  cmcourseinfo.cpp
+SOURCE                                  cmexam.cpp
+SOURCE                                  cmexamlist.cpp
+SOURCE                                  cmexercise.cpp
+SOURCE                                  cmfavorites.cpp
+SOURCE                                  cmfeedback.cpp
+SOURCE                                  cmfriend.cpp
+SOURCE                                  cmfriendrequest.cpp
+SOURCE                                  cmgetnewcontent.cpp
+SOURCE                                  cmglobal.cpp
+SOURCE                                  cmglobal_sym.cpp
+SOURCE                                  cmgroup.cpp
+SOURCE                                  cmlogin.cpp
+SOURCE                                  cmmicroblog.cpp
+SOURCE                                  cmmyinfo.cpp
+//SOURCE                                  cmnetworkdatalist.cpp
+SOURCE                                  cmqacategory.cpp
+SOURCE                                  cmqalist.cpp
+SOURCE                                  cmquestioncategory.cpp
+SOURCE                                  cmquestiondetail.cpp
+SOURCE                                  cmquestionhandler.cpp
+SOURCE                                  cmrecentcontent.cpp
+SOURCE                                  cmresetpassword.cpp
+SOURCE                                  cmsearch.cpp
+SOURCE                                  cmsearchfriend.cpp
+SOURCE                                  cmsession.cpp
+SOURCE                                  cmsettings.cpp
+SOURCE                                  cmsurvey.cpp
+SOURCE                                  cmsurveylist.cpp
+SOURCE                                  cmtopiclist.cpp
+SOURCE                                  cmtopicmessage.cpp
+SOURCE                                  cmupdate.cpp
+SOURCE                                  cmwebimage.cpp
+SOURCE                                  cmwrongquestion.cpp
+SOURCE                                  cmgeneral.cpp
+
+SOURCEPATH                              ..\..\symbian
+SOURCE                                  makecall.cpp
+
+LIBRARY                                 euser.lib 
+LIBRARY                                 estor.lib 
+VENDORID                                0 
+CAPABILITY                              NONE

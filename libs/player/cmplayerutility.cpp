@@ -1,0 +1,330 @@
+// //////////////////////////////////////////////////////////////////////////////
+//  Copyright (c) 2009,
+//  All rights reserved.
+//  
+//  FileName:
+//  Description:
+//  Author:
+// //////////////////////////////////////////////////////////////////////////////
+
+#include "stdafx.h"
+//#include "cmsetting.h"
+//#include "cmglobal.h"
+#include "cmplayerutility.h"
+#include "cmpath.h"
+#include "cmstring.h"
+#include "cmfile.h"
+
+#include <SDL.h>
+/* Include the SDL main definition header */
+#include "SDL_main.h"
+#include "avplayer.h"
+#include "cmcoursedownload.h"
+using namespace std;
+
+CMPlayerUtility::CMPlayerUtility(IMPlayerUtilityObserver* rPlayerObserver)
+ : m_PlayerObserver(rPlayerObserver)
+ , m_UserData(NULL)
+ , m_nState(EUnKnown)
+ , m_nDuration(0)
+ , m_nPosition(0)
+ , m_nBufTime(60)
+ , m_bOnlyAudio(FALSE)
+ , m_bDataCompleted(FALSE)
+ , m_bOpened(FALSE)
+ , m_bManuPause(FALSE)
+{
+}
+
+CMPlayerUtility::~CMPlayerUtility()
+{
+    this->Close();
+}
+
+BOOL CMPlayerUtility::Init()
+{
+    if(m_nState == EUnKnown)
+    {
+    	StatusChange(EReady);
+		return TRUE;
+    }
+    else
+        return FALSE;
+}
+
+void CMPlayerUtility::OpenUrl(const char* sUrl, const UINT32 nMode, const char* coursewareID)
+{
+    string path = CMCourseDownload::GetInstance()->GetLocalFilePath(coursewareID);
+
+    //先检查本地文件在不在
+    if(path.size() !=0 && CMFile::FileExist(CMString(path.c_str())))
+    {
+    	OpenFile(CMString(path.c_str()), nMode);
+    	return;
+    }
+
+	CMPath tmpPath(CMPath::DOWNLOAD_PATH);
+    CMString sOrgUrl;
+    INT32 pos;
+    char* s = strstr(sUrl,"?sid=");
+    if(s == NULL)
+    	s = strstr(sUrl, "&sid=");
+    if(s != NULL)
+    	sOrgUrl = CMString(sUrl,s - sUrl);
+    else
+    	sOrgUrl = sUrl;
+    CMString filename = tmpPath.String()+CMFile::GetTempFileName(sOrgUrl, "");
+#if defined(__IPHONE_OS__)
+    s =  strstr(sUrl,"file://");
+    if(s != NULL && s == sUrl) {
+        sOrgUrl = sOrgUrl.Mid(7);
+    }
+    filename = sOrgUrl;
+#endif
+	if(CMFile::FileExist(filename))
+    {
+    	OpenFile(filename, nMode);
+    	return;
+    }
+    //本地无此文件，去数据库读取
+	{
+	m_bDataCompleted = FALSE;
+	m_bOnlyAudio = nMode != EMode_3mv;
+	SDL_Event event;
+	int len;
+	char* s;
+
+	event.type = FF_OPEN_EVENT;
+
+	len = strlen(sUrl) + 1;
+	s = (char*)SDL_malloc(len);
+	SDL_memcpy(s, (const char*)sUrl, len);
+	event.user.data1 = s;
+	event.user.data2 = this;
+
+	nOpenType = 1;
+
+	SDL_PushEvent(&event);
+	}
+}
+
+void CMPlayerUtility::OpenFile(const char* sFileName, const UINT32 nMode/* = EMode_3mv*/)
+{
+    if(m_nState == EReady)
+    {
+        m_bDataCompleted = FALSE;
+        m_bOnlyAudio = nMode != EMode_3mv;
+
+		SDL_Event event;
+		int len;
+		char* s;
+
+		event.type = FF_OPEN_EVENT;
+
+		len = strlen(sFileName) + 1;
+		s = (char*)SDL_malloc(len);
+		SDL_memcpy(s, (const char*)sFileName, len);
+		event.user.data1 = s;
+		event.user.data2 = this;
+
+		nOpenType = 0;
+
+		SDL_PushEvent(&event);
+
+    }
+}
+
+void CMPlayerUtility::Play()
+{
+	av_play();
+}
+
+void CMPlayerUtility::Pause()
+{
+	av_pause();
+}
+
+void CMPlayerUtility::Stop()
+{
+	av_stop();
+}
+
+void CMPlayerUtility::Close()
+{
+    this->Stop();
+//    if(m_nState == EStopped)
+//    {
+//        if(m_bOpened)
+//        {
+//            m_pAudioPlay->Close();
+//			if(!m_bOnlyAudio && m_pStreamBuffer->StreamCount() > 1)
+//				m_pVideoPlay->Close();
+//            m_bOpened = FALSE;
+//        }
+//        m_PlayerObserver.StateChange(m_UserData, EReady, m_nState);
+//        m_nState = EReady;
+//    }
+}
+
+INT32 CMPlayerUtility::Duration()
+{
+    return av_duration();
+}
+
+INT32 CMPlayerUtility::GetPosition()
+{
+    return av_getposition();
+}
+
+void CMPlayerUtility::SetPosition(INT32 nPos)
+{
+	av_setposition(nPos);
+}
+
+INT32 CMPlayerUtility::MaxVolume()
+{
+    INT32 nVol = 0;
+//    if(m_pAudioPlay)
+//        nVol = m_pAudioPlay->MaxVolume();
+    return nVol;
+}
+
+INT32 CMPlayerUtility::GetVolume()
+{
+    INT32 nVol = 0;
+//    if(m_pAudioPlay)
+//        nVol = m_pAudioPlay->GetVolume();
+    return nVol;
+}
+
+void CMPlayerUtility::SetVolume(INT32 nVolume)
+{
+//    if(m_pAudioPlay)
+//        m_pAudioPlay->SetVolume(nVolume);
+}
+
+void CMPlayerUtility::SetVolPer(UINT32 nPer)
+{
+//	if (nPer > 100) nPer = 100;
+//
+//	int nVol = nPer * MaxVolume() / 100;
+//	SetVolume(nVol);
+}
+
+void CMPlayerUtility::VolUp()
+{
+//	INT32 nOldVol = GetVolume();
+//	INT32 nMaxVol = MaxVolume();
+//
+//	INT32 nNewVol = nOldVol + 10 * nMaxVol / 100;
+//	if (nNewVol > nMaxVol) nNewVol = nMaxVol;
+//	SetVolume(nNewVol);
+}
+
+void CMPlayerUtility::VolDown()
+{
+//	INT32 nOldVol = GetVolume();
+//	INT32 nMaxVol = MaxVolume();
+//
+//	INT32 nNewVol = nOldVol - 10 * nMaxVol / 100;
+//	if (nNewVol < 0) nNewVol = 0;
+//	SetVolume(nNewVol);
+}
+
+INT32 CMPlayerUtility::GetRotation()
+{
+    INT32 nRotation = 0;
+//    if(m_pVideoPlay)
+//        nRotation = m_pVideoPlay->GetRotation();
+    return nRotation;
+}
+
+INT32 CMPlayerUtility::GetOpenType()
+{
+	return nOpenType;
+}
+
+void CMPlayerUtility::SetRotation(INT32 nRotation)
+{
+//    if(m_pVideoPlay)
+//        m_pVideoPlay->SetRotation(nRotation);
+}
+
+void CMPlayerUtility::SetDrawSize(INT32 nWidth, INT32 nHeight)
+{
+//    if(m_pVideoPlay)
+//        m_pVideoPlay->SetDrawSize(nWidth, nHeight);
+}
+
+void CMPlayerUtility::SetDrawPoint(INT32 nLeft, INT32 nTop)
+{
+//	if(m_pVideoPlay)
+//		m_pVideoPlay->SetDrawPoint(nLeft, nTop);
+}
+
+//void CMPlayerUtility::GetDrawRect(CMRect& rcDraw)
+//{
+//    if(m_pVideoPlay)
+//        m_pVideoPlay->GetDrawRect(rcDraw);
+//}
+//
+//void CMPlayerUtility::SetDrawRect(CMRect& rcDraw)
+//{
+//    if(m_pVideoPlay)
+//        m_pVideoPlay->SetDrawRect(rcDraw);
+//}
+
+void CMPlayerUtility::SetManuPause(BOOL pause)
+{
+	m_bManuPause = pause;
+}
+
+BOOL CMPlayerUtility::IsManuPause()
+{
+	return m_bManuPause;
+}
+
+BOOL CMPlayerUtility::IsPlaying()
+{
+	return av_isplaying();
+}
+
+void CMPlayerUtility::StatusChange(INT32 nStatus)
+{
+	if (m_PlayerObserver) {
+		m_PlayerObserver->StateChange(m_UserData, nStatus, m_nState);
+	}
+	m_nState = nStatus;
+}
+
+void CMPlayerUtility::VideoDraw(void* data, int width, int height)
+{
+	if (m_PlayerObserver) {
+		m_PlayerObserver->VideoDraw((UINT8*)data, width, height);
+	}
+}
+
+#if defined(__IPHONE_OS__)
+void CMPlayerUtility::InterruptStart()
+{
+    av_interrupt_start();
+}
+
+void CMPlayerUtility::InterruptEnd()
+{
+    av_interrupt_end();
+}
+#endif
+
+void status_change(void* p, int status)
+{
+	if (p)
+		((CMPlayerUtility*)p)->StatusChange(status);
+}
+
+void video_draw(void* p, void* data, int width, int height)
+{
+	if (p)
+		((CMPlayerUtility*)p)->VideoDraw(data, width, height);
+}
+

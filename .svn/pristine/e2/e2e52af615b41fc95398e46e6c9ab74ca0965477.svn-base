@@ -1,0 +1,56 @@
+[general]
+id=com.midea.mlearning.in.test1
+name=美课
+versionCode=9
+versionName=1.0.8
+UMENG_CHANNEL=
+umengKey=
+jpushKey=
+serverUrl=http://mlintest.midea.com.cn:8080/wdxieyi/api.do
+signUrl=http://192.168.0.32:8000/ipasign/
+
+#clear tmp, move base to tmp, replace with replace
+[copy_dirs]
+BASE_DIR=.
+
+[build]
+configuration=Debug
+workspace=MLPlayer.xcworkspace
+scheme=MLPlayer
+{%CODE_SIGN_IDENTITY%}=
+{%CODE_SIGNING_REQUIRED%}=NO
+
+[sign]
+certification= wunding.enterprise:dis
+profile=dis_midea.mobileprovision
+
+[publish]
+plistUrl=https://121312312/MLPlayer.plist
+ipaUrl=http:/sdfasdfxcvx.tsadfs/MLPlayer.ipa
+iconSmallUrl=http:/sdfasdfxcvx.tsadfs/57.png
+iconBigUrl=http:/sdfasdfxcvx.tsadfs/120.png
+iconSmallPath=MLPlayer/Images.xcassets/AppIcon.appiconset/57.png
+iconBigPath=MLPlayer/Images.xcassets/AppIcon.appiconset/120.png
+
+#info.plist
+[MLPlayer-Info.plist]
+CFBundleDisplayName={{name}}
+CFBundleIdentifier={{id}}
+CFBundleShortVersionString={{versionName}}
+
+#jush.plist
+[PushConfig.plist]
+APS_FOR_PRODUCTION=1
+CHANNEL=APP STORE
+APP_KEY={{jpushKey}}
+
+#modify define 
+[Classes/CMConfig.h]
+ShowEidInput=0
+defaultEid="ulp_midea"
+UMENG_APPKEY=@"{{umengKey}}"
+
+#modify xml 
+[raw/mlplayer.cfg]
+centerserverurl:value={{serverUrl}}
+enterprise:title={{name}}

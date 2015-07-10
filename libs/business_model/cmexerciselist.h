@@ -1,0 +1,136 @@
+// //////////////////////////////////////////////////////////////////////////////
+//  Copyright (c) 2009,
+//  All rights reserved.
+//  
+//  FileName:
+//  Description:
+//  Author:
+// //////////////////////////////////////////////////////////////////////////////
+
+#ifndef CMEXERCISELIST_H_HEADER_INCLUDED_B186213E
+#define CMEXERCISELIST_H_HEADER_INCLUDED_B186213E
+
+#include "cmcommon.h"
+#include "cmhandler.h"
+#include <string>
+using namespace std;
+
+template <typename T> class CMList;
+
+class TExerciseListItem
+{
+  public:
+    TExerciseListItem();
+    
+    ~TExerciseListItem();
+    
+    string sID;
+
+    string sTitle;
+    
+    int nQuestioncount;
+
+    //FIXME 由未完成题目数改为完成的题目数
+    int nCompleteCount;
+
+    string sDesc;
+
+    string sCategory;
+
+    int  nUsercompletecount;
+
+    string sPubdate;
+    
+    int  nCurIndex;
+    
+    int nWrongCount;
+    
+    int nRightCount;
+    
+    string sTrainID;
+
+    const char* GetExerciseListItemID() const;
+    
+    const char* GetExerciseListItemTitle() const;
+    
+    const char* GetExerciseListItemDesc() const;
+    
+    const char* GetExerciseListItemCategory() const;
+    
+    const char* GetExerciseListItemPubdate() const;
+    
+ protected:
+    
+    int BindParam(sqlite3_stmt* stmt,int col,int value) const;
+    
+    int BindParam(sqlite3_stmt* stmt,int col,const char* value) const;
+    
+    int BindParam(sqlite3_stmt* stmt,int col,float value) const;
+    
+    //绑定属性,sql中使用
+    virtual  void bindItem(sqlite3_stmt* stmt) const;
+    
+    friend class CMDBHelper;
+
+};
+
+class CMExerciseList : public CMHandler<TExerciseListItem>
+{
+  public:
+    CMExerciseList();
+
+    virtual ~CMExerciseList();
+
+    void SetListener(IMUpdateDataListener* pListener);
+
+    BOOL GetList();
+    
+    //获取培训班练习
+    BOOL GetTrainList(const char* sTrainId);
+
+    BOOL GetExerciseById(const char* exerciseId);
+    
+    //练习列表本地化
+    BOOL LoadFromDB();
+
+
+  protected:
+    //检查本地是否存在
+    BOOL CheckExerciseListIsExit(const char *sID);
+
+    virtual BOOL DoPutItem(TiXmlElement* pItem, sqlite3* db, TExerciseListItem& item);
+    
+    virtual BOOL DoGetCacheItems(sqlite3* db);
+    
+    virtual BOOL DoRefresh(TExerciseListItem& obj);
+    
+    virtual BOOL DoUpdate(const TExerciseListItem& obj);
+    
+    virtual BOOL DoCreate(sqlite3* db);
+    
+    virtual void DoClear();
+    
+	virtual void OnSessionCmd(unsigned int nCmdID, unsigned int nCode, TiXmlDocument* pDoc);
+    
+    
+    //从XML中读取对应Question的正确数和错题库的题数
+    BOOL GetExerciseData(const char* eid, TExerciseListItem& item);
+    
+
+  private:
+
+    string n_sTrainID;
+
+//    void* m_UserData;
+//
+//    IMUpdateDataListener *m_pListener;
+//
+//	CMSession* m_pSession;
+//
+//	CMList<TExerciseListItem>* m_lstItem;
+
+};
+
+
+
+#endif /* CMEXERCISELIST_H_HEADER_INCLUDED_B186213E */

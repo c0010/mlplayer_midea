@@ -1,0 +1,92 @@
+//
+//  CMLeftView.h
+//  MLPlayer
+//
+//  Created by hushengwu on 14/12/22.
+//  Copyright (c) 2014年 w. All rights reserved.
+//
+
+#import <UIKit/UIKit.h>
+#import "tool.h"
+#import "UIProgressBar.h"
+#import "cmcommon.h"
+#import "cmtrainsigninlist.h"
+
+@class CMMainControl;
+class CMLeftMyInfoUpdateLister;
+
+@interface CMLeftView : UIView<UITableViewDataSource,UITableViewDelegate,UIActionSheetDelegate,UIImagePickerControllerDelegate,UINavigationControllerDelegate>{
+    CMLeftMyInfoUpdateLister *m_pMyinfoListener;
+
+    UIActivityIndicatorView* activityView;
+
+    UILabel* jobnumber;
+    UILabel* dep;
+    UILabel* credit;
+    UILabel* value;
+
+    UIButton *rankBtn;
+
+    NSMutableDictionary * lbdict;
+
+    UIProgressBar* rankPorgress;
+
+    UILabel* rankPoint;
+
+    UIScrollView* scrollView;
+
+    NSString *strImageName;
+
+}
+
+@property (nonatomic,strong) UITableView *tableviewlist;
+@property (nonatomic,strong) UIImageView *headimageview;
+@property (nonatomic,strong) UILabel     *lblName;
+@property (nonatomic,assign) BOOL        isDataLoad;
+@property (nonatomic,strong) UILabel     *medalLabel;
+@property (nonatomic,strong) UILabel     *rankLabel;
+@property (nonatomic,strong) UILabel     *creditLabel;
+@property (nonatomic,strong) UIView      *headView;
+@property (nonatomic,assign) BOOL        bIsPush;
+@property (nonatomic,strong) CMMainControl *navigationcontrollerdelegate;
+
+- (void)updateData;
+- (void)refreshHeadImageView;
+- (void)refreshMyInfo:(BOOL)useCache;
+- (void)bindPushInfo;
+
+@end
+
+class CMLeftMyInfoUpdateLister : public IMUpdateDataListener
+{
+    void OnUpdateDataProgress(void* UserData, int nPercent)
+    {
+        
+    }
+    
+    void OnUpdateDataFinish(void* UserData, int Result)
+    {
+        
+        if (![tool GetIsBack]) {
+            
+            CMLeftView* control= (__bridge CMLeftView*)UserData;
+            
+            if (Result == TResult::ESuccess)
+            {
+                control.isDataLoad = YES;
+                
+                //再刷新数据
+                [control bindPushInfo];
+                [control updateData];
+                
+            }
+            else
+            {
+                [tool ShowError:Result];
+                [control updateData];
+
+            }
+        }
+    }
+};
+

@@ -1,0 +1,75 @@
+//
+//  CMBrowser.m
+//  MLPlayer
+//
+//  Created by water on 14-10-21.
+//  Copyright (c) 2014年 w. All rights reserved.
+//
+
+#import "CMBrowserHandler.h"
+
+@implementation CMBrowserHandler
+
++ (id)handler{
+    return [[CMBrowserHandler alloc] init];
+}
+
+- (id)init
+{
+    self = [super init];
+    if (self) {
+       
+        
+        if(m_handlerListener == NULL)
+            m_handlerListener = new CMBrowserHandlerListener();
+        
+        if(m_browser == NULL)
+            m_browser = new CMBrowser(m_handlerListener);
+        
+        m_browser->SetUserData((__bridge void*)self);
+        
+    }
+    return self;
+}
+
+- (void)doRequestNewsById:(NSString *)newsId success:(HandlerSuccess)success failure:(HandlerFailure)failure{
+
+    if (!newsId || [newsId isEqualToString:@""]) {
+        return;
+    }
+    
+    self.m_handlerSuccess = success;
+    self.m_handlerFailure = failure;
+
+    m_browser->RequestNewsById([newsId UTF8String]);
+}
+
+- (void)doRequestCoursewareById:(NSString *)wareId success:(HandlerSuccess)success failure:(HandlerFailure)failure{
+
+    if (!wareId || [wareId isEqualToString:@""]) {
+        return;
+    }
+    
+    self.m_handlerSuccess = success;
+    self.m_handlerFailure = failure;
+    
+    m_browser->RequestCoursewareById([wareId UTF8String]);
+}
+
+- (void)doHandlerSuccess{
+
+    if (self.m_handlerSuccess) {
+        self.m_handlerSuccess(m_browser);
+        self.m_handlerSuccess = nil;
+    }
+}
+
+- (void)doHandlerFailure:(int) errorCode{
+
+    if (self.m_handlerFailure) {
+        self.m_handlerFailure(errorCode);
+        self.m_handlerFailure = nil;
+    }
+}
+
+@end

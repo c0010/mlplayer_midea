@@ -1,0 +1,36 @@
+/*
+============================================================================
+ Name		: network.mmp
+ Author	  : bh
+ Copyright   : www.wunding.com
+ Description : This is the project specification file for network.
+============================================================================
+*/
+
+TARGET		  network.lib
+TARGETTYPE	  lib
+UID			 0
+
+USERINCLUDE	 ..
+USERINCLUDE	 ..\..
+USERINCLUDE	 ..\..\..\include
+USERINCLUDE	 ..\..\..\tools
+USERINCLUDE	 ..\..\..\xmlparser
+
+SYSTEMINCLUDE   \epoc32\include
+SYSTEMINCLUDE   \epoc32\include\libc
+
+SOURCEPATH	  ..
+SOURCE		  cmsocketc_sym.cpp
+SOURCE		  cmnetworkmgr_sym.cpp
+SOURCE 		  cmconnectionnotifier.cpp
+
+SOURCEPATH	  ..\..
+SOURCE		  cmnetworkmgr.cpp
+SOURCE		  cmhttpc.cpp
+SOURCE		  cmhttpc_sym_mob_and.cpp
+SOURCE		  cmdownloader.cpp
+
+#ifdef ENABLE_ABIV2_MODE
+DEBUGGABLE_UDEBONLY
+#endif

@@ -1,0 +1,534 @@
+//
+//  CMCardViewController.m
+//  MLPlayer
+//
+//  Created by wmgwd on 13-12-9.
+//  Copyright (c) 2013年 w. All rights reserved.
+//
+
+#import "stdafx.h"
+#import "CMCardViewController.h"
+#import "CMMainControl.h"
+#import "CMExamInfoControl.h"
+#import "tool.h"
+#import "CMLabel.h"
+#import "cmquestionhandler.h"
+#import "cmwrongquestion.h"
+#import "cmexam.h"
+#import "CMAlertview.h"
+
+#define CARD_CELL @"cardcell"
+
+@interface CMCardViewController ()
+- (IBAction)commit:(id)sender;//提交
+- (IBAction)redoExercise:(id)sender;//重做
+- (IBAction)enterDetail:(id)sender;
+@end
+
+@implementation CMCardViewController
+
+
+- (id)initWithNibName:(NSString *)nibNameOrNil bundle:(NSBundle *)nibBundleOrNil
+{
+    self = [super initWithNibName:nibNameOrNil bundle:nibBundleOrNil];
+    if (self) {
+        // Custom initialization
+    }
+    return self;
+}
+
+- (void)viewDidLoad
+{
+    [super viewDidLoad];
+	// Do any additional setup after loading the view.
+    
+    m_pSimpleListener = new CMExamSimpleResultListener();
+    mWrongQuestion->SetListener(nil, m_pSimpleListener);
+    mWrongQuestion->SetUserData(BridgeObjectToC(self));
+    
+    self.titleLabel.text = self.navigationItem.title;
+    self.view.backgroundColor = UIColorRGB(0xeaeaea);
+    
+    UIView *rightView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 80, 44)];
+    rightView.backgroundColor = [UIColor clearColor];
+    
+	UIButton *rightBtn = [UIButton buttonWithType:UIButtonTypeCustom];
+	rightBtn.frame = CGRectMake(0, 0, 80, 44);
+	[rightBtn setTitleColor:kColorButtonTitle forState:UIControlStateNormal];
+	[rightBtn setTitleColor:[UIColor lightGrayColor] forState:UIControlStateHighlighted];
+    
+    UIImageView* vsep = [[UIImageView alloc] init];
+    vsep.image = [UIImage imageNamed:@"navsep"];
+    vsep.frame = CGRectMake(0, 0, 2, 44);
+    
+    if (__iOS7)
+    {
+        [rightView addSubview:rightBtn];
+    }
+    else
+    {
+        [rightView addSubview:vsep];
+        [rightView addSubview:rightBtn];
+    }
+    CMRELEASE(vsep);
+    
+    NSString *strText = nil;
+    
+    if ([mType isEqual:@"exam"])
+    {
+        [rightBtn setTitle:I(@"确认交卷") forState:UIControlStateNormal];
+        [rightBtn addTarget:self action:@selector(commit:) forControlEvents:UIControlEventTouchUpInside];
+        
+        CMLabel *tipsLabel = [[CMLabel alloc] init];
+        tipsLabel.frame = CGRectMake(0, 10, UI_IOS_WINDOW_WIDTH, 30);
+        tipsLabel.backgroundColor = [UIColor clearColor];
+        tipsLabel.font = [UIFont systemFontOfSize:14];
+        tipsLabel.textAlignment = [tool TextAlignment:ALIGNMENTCENTER];
+        
+        NSString *strTime = nil;
+        
+        if (nPassTime > 60)
+        {
+            strTime = [NSString stringWithFormat:I(@"%d分%d秒"),nPassTime/60,nPassTime%60];
+        }
+        else
+        {
+            strTime = [NSString stringWithFormat:I(@"%d秒"),nPassTime%60];
+        }
+        
+        strText = [NSString stringWithFormat:I(@"共%d题，已答%d题，耗时%@，确定要交卷吗?"),mWrongQuestion->GetItemCount(),mWrongQuestion->GetDoneCount(),strTime];
+        CGSize textSize = [strText sizeWithFont:[UIFont systemFontOfSize:13]];
+        
+        if (textSize.width < tipsLabel.frame.size.width)
+        {
+            tipsLabel.frame = CGRectMake(UI_IOS_WINDOW_WIDTH/2 - textSize.width/2, tipsLabel.frame.origin.y, textSize.width, tipsLabel.frame.size.height);
+        }
+        
+        [tipsLabel setText:strText WithFont:[UIFont systemFontOfSize:13] AndColor:UIColorRGB(0x525252)];
+        [tipsLabel setKeyWordRange:NSMakeRange([NSString stringWithFormat:@"%d",mWrongQuestion->GetItemCount()].length+5, [NSString stringWithFormat:@"%d",mWrongQuestion->GetDoneCount()].length) WithFont:[UIFont systemFontOfSize:13] AndColor:UIColorRGB(0xff7e00)];
+        [self.view addSubview:tipsLabel];
+        CMRELEASE(tipsLabel);
+    }
+    else
+    {
+        [rightBtn setTitle:I(@"重新开始") forState:UIControlStateNormal];
+        [rightBtn addTarget:self action:@selector(redoExercise:) forControlEvents:UIControlEventTouchUpInside];
+        
+        CMLabel *tipsLabel = [[CMLabel alloc] init];
+        tipsLabel.frame = CGRectMake(0, 10, UI_IOS_WINDOW_WIDTH, 30);
+        tipsLabel.backgroundColor = [UIColor clearColor];
+        tipsLabel.font = [UIFont systemFontOfSize:14];
+        tipsLabel.textAlignment = [tool TextAlignment:ALIGNMENTCENTER];
+        
+        int nRightCount = mWrongQuestion->GetRightCount([mQestionID UTF8String]);
+        int nTotalCount = mWrongQuestion->GetDoneCount();
+        
+        NSString *strRightPercent;
+        
+        if (nTotalCount <= 0)
+        {
+            strRightPercent = @"0%";
+        }
+        else
+        {
+            NSString *str = [NSString stringWithFormat:@"%.0f",(float)(nRightCount*100/nTotalCount)];
+            strRightPercent = [NSString stringWithFormat:@"%@%@",str,@"%"];
+        }
+        NSString *strCorrect = [NSString stringWithFormat:I(@"正确率%@"),strRightPercent];
+        strText = [NSString stringWithFormat:I(@"本次练习共答%d题，答对%d题，%@"),mWrongQuestion->GetDoneCount(),mWrongQuestion->GetRightCount([mQestionID UTF8String]),strCorrect];
+        CGSize textSize = [strText sizeWithFont:[UIFont systemFontOfSize:13]];
+        
+        if (textSize.width < tipsLabel.frame.size.width)
+        {
+            tipsLabel.frame = CGRectMake(UI_IOS_WINDOW_WIDTH/2 - textSize.width/2, tipsLabel.frame.origin.y, textSize.width, tipsLabel.frame.size.height);
+        }
+        
+        [tipsLabel setText:strText WithFont:[UIFont systemFontOfSize:13] AndColor:UIColorRGB(0x525252)];
+        [tipsLabel setKeyWordRange:NSMakeRange(6, [NSString stringWithFormat:@"%d",mWrongQuestion->GetDoneCount()].length) WithFont:[UIFont systemFontOfSize:13] AndColor:UIColorRGB(0xff7e00)];
+        [tipsLabel setKeyWordRange:NSMakeRange(6+[NSString stringWithFormat:@"%d",mWrongQuestion->GetDoneCount()].length+4, [NSString stringWithFormat:@"%d",mWrongQuestion->GetRightCount([mQestionID UTF8String])].length) WithFont:[UIFont systemFontOfSize:13] AndColor:UIColorRGB(0xff7e00)];
+        [tipsLabel setKeyWordRange:NSMakeRange(6+[NSString stringWithFormat:@"%d",mWrongQuestion->GetDoneCount()].length+4+[NSString stringWithFormat:@"%d",mWrongQuestion->GetRightCount([mQestionID UTF8String])].length+5, strRightPercent.length-1) WithFont:[UIFont systemFontOfSize:13] AndColor:UIColorRGB(0xff7e00)];
+        [self.view addSubview:tipsLabel];
+        CMRELEASE(tipsLabel);
+    }
+    UIBarButtonItem *rightItem = [[UIBarButtonItem alloc] initWithCustomView:rightView];
+    self.navigationItem.rightBarButtonItem = rightItem;
+    CMRELEASE(rightItem);
+    CMRELEASE(rightView);
+    
+    UIImageView *backImg = [[UIImageView alloc] init];
+    backImg.frame = CGRectMake(0, 32, 320, UI_IOS_WINDOW_HEIGHT - 64 - 34);
+    backImg.image = [UIImage imageNamed:@"cardback@2x"];
+    [self.view addSubview:backImg];
+    CMRELEASE(backImg);
+    
+    UITableView *pTableView = [[UITableView alloc] init];
+    pTableView.frame = CGRectMake(0, 44, 320, UI_IOS_WINDOW_HEIGHT - 64 - 60);
+    pTableView.backgroundColor = [UIColor clearColor];
+    pTableView.separatorStyle = UITableViewCellSeparatorStyleNone;
+    pTableView.delegate = self;
+    pTableView.dataSource = self;
+    pTableView.tag = 1000;
+    [self.view addSubview:pTableView];
+    CMRELEASE(pTableView);
+}
+
+- (void)setHandler:(CMWrongQuestion *)hanler questionType:(NSString *)type questionId:(NSString *)qID
+{
+    mWrongQuestion = hanler;
+    mType = type;
+    mQestionID = qID;
+}
+- (void)setPassTime:(NSInteger)count
+{
+    nPassTime = count;
+}
+
+
+- (void)didReceiveMemoryWarning
+{
+    [super didReceiveMemoryWarning];
+    // Dispose of any resources that can be recreated.
+}
+
+- (void)dealloc
+{
+    SAFEDELETE(m_pSimpleListener);
+#if !__has_feature(obj_arc)
+#endif
+}
+
+
+- (IBAction)commit:(id)sender
+{
+    //    [MessageBox DoModalWithTitle:I(@"确定交卷？") message:nil mode:MODE_YESNO confirm:^{
+    //        NSUserDefaults *ud = [NSUserDefaults standardUserDefaults];
+    //        [ud removeObjectForKey:@"exam"];
+    //        [ud setObject:@"0" forKey:kUDOpenPush];
+    //
+    //        [tool ShowBeforeBack];
+    //        mWrongQuestion->Commit();
+    //
+    //    } cancel:^{
+    //    }];
+    
+    
+    WEAKSELF;
+    CMAlertView *alert = [[CMAlertView alloc] initWithTitle:I(@"确定交卷?") message:nil cancelButtonTitle:I(@"取消") otherButtonTitles:I(@"确定") completionBlock:^(NSUInteger buttonIndex, CMAlertView *alertView) {
+        STRONGSELF;
+        if (buttonIndex == CMAlertViewOk) {
+            NSUserDefaults *ud = [NSUserDefaults standardUserDefaults];
+            [ud removeObjectForKey:@"exam"];
+            [ud setObject:@"0" forKey:kUDOpenPush];
+            
+            [tool ShowBeforeBack];
+            sself->mWrongQuestion->Commit();
+        }
+        else if (buttonIndex == CMAlertViewCancel){
+        }
+    }];
+    [alert setDisabledOutSide:YES];
+    [alert show];
+}
+
+- (IBAction)redoExercise:(id)sender
+{
+    //    [MessageBox DoModalWithTitle:I(@"重新开始") message:I(@"重新开始将清除所有的答题记录") mode:MODE_YESNO confirm:^{
+    //        //清空答案
+    //        mWrongQuestion->ClearAnswer();
+    //
+    //        [[NSNotificationCenter defaultCenter] postNotificationName:@"gotoindex" object:nil userInfo:[NSDictionary dictionaryWithObjectsAndKeys:@"0",@"index", nil]];
+    //        [self.navigationController popViewControllerAnimated:YES];
+    //
+    //    } cancel:^{
+    //    }];
+    
+    WEAKSELF;
+    CMAlertView *alert = [[CMAlertView alloc] initWithTitle:I(@"重新开始") message:I(@"重新开始将清除所有的答题记录") cancelButtonTitle:I(@"取消") otherButtonTitles:I(@"确定") completionBlock:^(NSUInteger buttonIndex, CMAlertView *alertView) {
+        STRONGSELF;
+        if (buttonIndex == BUTTON_CONFIRM_TAG) {
+            //清空答案
+            sself->mWrongQuestion->ClearAnswer();
+            
+            [[NSNotificationCenter defaultCenter] postNotificationName:@"gotoindex" object:nil userInfo:[NSDictionary dictionaryWithObjectsAndKeys:@"0",@"index", nil]];
+            [sself.navigationController popViewControllerAnimated:YES];
+        } else if (buttonIndex == BUTTON_CANCEL_TAG){
+        }
+    }];
+    [alert setDisabledOutSide:YES];
+    [alert show];
+}
+
+- (void)sendResult:(int)result
+{
+    [tool DismissAtEnd];
+    
+	NSString *strValue=nil;
+	
+	if ([mType isEqualToString:@"practice"])
+    {
+		strValue =[NSString stringWithString:I(@"练习")];
+		
+	}else if ([mType isEqualToString:@"wrong"]) {
+		
+		strValue =[NSString stringWithString:I(@"错题")];
+	}else if ([mType isEqualToString:@"exam"]) {
+		
+		strValue =[NSString stringWithString:I(@"测验")];
+        strValue = @"";
+	}
+	
+	if(result != TResult::ESuccess)
+    {
+        [tool ShowAlert:[NSString stringWithFormat:I(@"提交%@失败"),strValue]];
+    }
+	else
+	{
+        if([mType isEqualToString:@"exam"])
+        {
+//             if ([MessageBox DoModalWithTitle:I(@"交卷成功") message:nil mode:MODE_OK]) {
+//                [[NSNotificationCenter defaultCenter] postNotificationName:@"examcountchange" object:nil];
+//                
+//                
+//                NSUserDefaults *ud = [NSUserDefaults standardUserDefaults];
+//                NSString *openpush = [ud objectForKey:kUDOpenPush];
+//                
+//                if ([openpush isEqualToString:@"1"])
+//                {
+//                    [ud setObject:@"0" forKey:kUDOpenPush];
+//                    NSString *type = [ud objectForKey:kUDPushType];
+//                    
+//                    int selectRow = 0;
+//                    if ([type isEqualToString:@"course"] || [type isEqualToString:@"position_course"]) {
+//                        selectRow = 0;
+//                    }
+//                    else if ([type isEqualToString:@"news"]){
+//                        selectRow = 1;
+//                    }
+//                    else if ([type isEqualToString:@"exam"] || [type isEqualToString:@"exercise"]){
+//                        selectRow = 4;
+//                    }
+//                    else if ([type isEqualToString:@"survey"]){
+//                        selectRow = 4;
+//                    }
+//                    
+//                    CMMainControl* mainController = [[CMMainControl alloc] init];
+//                    [mainController setSelectedIndex:selectRow];
+//                    [self.navigationController pushViewController:mainController animated:NO];
+//                    CMRELEASE(mainController);
+//                    return;
+//                    
+//                }
+//                
+//                int nIndex = -1;
+//                
+//                NSArray *arr = self.navigationController.viewControllers;
+//                
+//                for (int i = 0; i < [arr count]; i++)
+//                {
+//                    if ([[arr objectAtIndex:i] isKindOfClass:[CMIntrodocutionViewController class]])
+//                    {
+//                        nIndex = i;
+//                        break;
+//                    }
+//                }
+//                
+//                if (nIndex >= 0)
+//                {
+//                    [[NSNotificationCenter defaultCenter] postNotificationName:@"completeexam" object:nil];
+//                    [self.navigationController popToViewController:[self.navigationController.viewControllers objectAtIndex:nIndex] animated:YES];
+//                }
+//                else
+//                {
+//                    [self.navigationController popViewControllerAnimated:YES];
+//                }
+//            }
+            
+            
+            
+            WEAKSELF;
+            CMAlertView *alert = [[CMAlertView alloc] initWithTitle:I(@"交卷成功") message:nil cancelButtonTitle:nil otherButtonTitles:I(@"确定") completionBlock:^(NSUInteger buttonIndex, CMAlertView *alertView) {
+                STRONGSELF;
+                if (buttonIndex == BUTTON_CONFIRM_TAG) {
+                    [[NSNotificationCenter defaultCenter] postNotificationName:@"examcountchange" object:nil];
+                    
+                    
+                    NSUserDefaults *ud = [NSUserDefaults standardUserDefaults];
+                    NSString *openpush = [ud objectForKey:kUDOpenPush];
+                    
+                    if ([openpush isEqualToString:@"1"])
+                    {
+                        [ud setObject:@"0" forKey:kUDOpenPush];
+                        NSString *type = [ud objectForKey:kUDPushType];
+                        
+                        int selectRow = 0;
+                        if ([type isEqualToString:@"course"] || [type isEqualToString:@"position_course"]) {
+                            selectRow = 0;
+                        }
+                        else if ([type isEqualToString:@"news"]){
+                            selectRow = 1;
+                        }
+                        else if ([type isEqualToString:@"exam"] || [type isEqualToString:@"exercise"]){
+                            selectRow = 4;
+                        }
+                        else if ([type isEqualToString:@"survey"]){
+                            selectRow = 4;
+                        }
+                        
+                        CMMainControl* mainController = [[CMMainControl alloc] init];
+                        [mainController setSelectedIndex:selectRow];
+                        [self.navigationController pushViewController:mainController animated:NO];
+                        CMRELEASE(mainController);
+                        return;
+                        
+                    }
+                    
+                    int nIndex = -1;
+                    
+                    NSArray *arr = self.navigationController.viewControllers;
+                    
+                    for (int i = 0; i < [arr count]; i++)
+                    {
+                        if ([[arr objectAtIndex:i] isKindOfClass:[CMIntrodocutionViewController class]])
+                        {
+                            nIndex = i;
+                            break;
+                        }
+                    }
+                    
+                    if (nIndex >= 0)
+                    {
+                        [[NSNotificationCenter defaultCenter] postNotificationName:@"completeexam" object:nil];
+                        [sself.navigationController popToViewController:[self.navigationController.viewControllers objectAtIndex:nIndex] animated:YES];
+                    }
+                    else
+                    {
+                        [sself.navigationController popViewControllerAnimated:YES];
+                    }
+                }
+            }] ;
+            [alert setDisabledOutSide:YES];
+            [alert show];
+        }
+	}
+}
+
+- (IBAction)enterDetail:(id)sender
+{
+    UIButton *btn = (UIButton *)sender;
+    NSString *strTitle = btn.currentTitle;
+    
+    [[NSNotificationCenter defaultCenter] postNotificationName:@"gotoindex" object:nil userInfo:[NSDictionary dictionaryWithObjectsAndKeys:[NSString stringWithFormat:@"%d",[strTitle intValue]-1],@"index", nil]];
+    [self.navigationController popViewControllerAnimated:YES];
+}
+
+#pragma mark - TableView delegate
+- (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
+{
+    int nCount = mWrongQuestion->GetItemCount();
+    return (nCount%6 > 0) ? nCount/6 + 1 : nCount/6;
+}
+
+- (CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    return 50;
+}
+
+- (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:CARD_CELL];
+    
+    if (cell == nil)
+    {
+# if ! __has_feature(objc_arc)
+        cell = [[[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:CARD_CELL] autorelease];
+# else
+        cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:CARD_CELL];
+# endif
+        cell.accessoryType = UITableViewCellAccessoryNone;
+        cell.selectionStyle = UITableViewCellSelectionStyleNone;
+        cell.backgroundColor = [UIColor clearColor];
+        
+        for (int i = 0; i < 6; i++)
+        {
+            UIButton *btn = [UIButton buttonWithType:UIButtonTypeCustom];
+            btn.frame = CGRectMake(14+i*50, 0, 42, 42);
+            btn.backgroundColor = [UIColor clearColor];
+            [btn setTitleColor:UIColorRGB(0x525252) forState:UIControlStateNormal];
+            btn.tag = 120000+i;
+            [cell.contentView addSubview:btn];
+        }
+    }
+    
+    
+    for (int i = 0; i < 6; i++)
+    {
+        UIButton *btn = (UIButton *)[cell.contentView viewWithTag:120000+i];
+        [btn setTitle:[NSString stringWithFormat:@"%d",indexPath.row*6+i+1] forState:UIControlStateNormal];
+        [btn addTarget:self action:@selector(enterDetail:) forControlEvents:UIControlEventTouchUpInside];
+        [btn setBackgroundImage:[UIImage imageNamed:@"examnotanswer@2x"] forState:UIControlStateNormal];
+        [btn setBackgroundImage:[UIImage imageNamed:@"examnotanser_p@2x"] forState:UIControlStateHighlighted];
+        
+        if (indexPath.row*6+i+1 <= mWrongQuestion->GetItemCount())
+        {
+            if ([mType isEqual:@"exam"])
+            {
+                //是否已做
+                if (mWrongQuestion->IsQuestionComplete(indexPath.row*6+i))
+                {
+                    [btn setBackgroundImage:[UIImage imageNamed:@"examanswerd_n@2x"] forState:UIControlStateNormal];
+                    [btn setBackgroundImage:[UIImage imageNamed:@"examanswerd_p@2x"] forState:UIControlStateHighlighted];
+                }
+            }
+            else
+            {
+                TQuestionItem questionItem;
+                mWrongQuestion->GetQuestionItem(indexPath.row*6+i, questionItem);
+                
+                //是否已做
+                if (mWrongQuestion->IsQuestionComplete(indexPath.row*6+i))
+                {
+                    if (questionItem.nType != TQuestionType::EText)
+                    {
+                        if (mWrongQuestion->isOptionAnswerRight(indexPath.row*6+i))
+                        {
+                            [btn setBackgroundImage:[UIImage imageNamed:@"exerciseright_n@2x"] forState:UIControlStateNormal];
+                            [btn setBackgroundImage:[UIImage imageNamed:@"exerciseright_p@2x"] forState:UIControlStateHighlighted];
+                        }
+                        else
+                        {
+                            [btn setBackgroundImage:[UIImage imageNamed:@"exercisewrong_n@2x"] forState:UIControlStateNormal];
+                            [btn setBackgroundImage:[UIImage imageNamed:@"exercisewrong_p@2x"] forState:UIControlStateHighlighted];
+                        }
+                    }
+                    else
+                    {
+                        if (questionItem.isChecked) {
+                            [btn setBackgroundImage:[UIImage imageNamed:@"examanswerd_n@2x"] forState:UIControlStateNormal];
+                            [btn setBackgroundImage:[UIImage imageNamed:@"examanswerd_p@2x"] forState:UIControlStateHighlighted];
+                        }
+                        
+                    }
+                }
+                else if(questionItem.isChecked){
+                    //当前题目点击显示答案（没有选择答案）
+                    [btn setBackgroundImage:[UIImage imageNamed:@"exercisewrong_n@2x"] forState:UIControlStateNormal];
+                    [btn setBackgroundImage:[UIImage imageNamed:@"exercisewrong_p@2x"] forState:UIControlStateHighlighted];
+                }
+            }
+            btn.hidden = NO;
+        }
+        else
+        {
+            btn.hidden = YES;
+        }
+    }
+    
+    return cell;
+}
+
+- (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    [tableView deselectRowAtIndexPath:indexPath animated:YES];
+}
+
+@end

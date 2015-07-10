@@ -1,0 +1,22 @@
+PODS:
+  - ATMHud (0.0.1)
+  - SDWebImage (3.7.2):
+    - SDWebImage/Core (= 3.7.2)
+  - SDWebImage/Core (3.7.2)
+  - ZBarSDK (1.3.1)
+
+DEPENDENCIES:
+  - ATMHud (~> 0.0.1)
+  - SDWebImage (~> 3.7.2)
+  - ZBarSDK (from `ZBarSDK.podspec.json`)
+
+EXTERNAL SOURCES:
+  ZBarSDK:
+    :podspec: ZBarSDK.podspec.json
+
+SPEC CHECKSUMS:
+  ATMHud: 47b3f5c9034918b83ce0b42e9fe744d4c49d7d00
+  SDWebImage: 71b7cdc1d1721d6a82ed62889030225f2c249e29
+  ZBarSDK: 8a0a7926dcbc167aa8a3ee1c28326f82733a0459
+
+COCOAPODS: 0.36.3

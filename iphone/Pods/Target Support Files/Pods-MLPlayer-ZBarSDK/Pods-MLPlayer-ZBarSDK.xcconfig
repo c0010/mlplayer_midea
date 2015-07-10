@@ -1,0 +1,5 @@
+PODS_MLPLAYER_ZBARSDK_EXCLUDED_SOURCE_FILE_NAMES[sdk=iphoneos*][arch=*] = ZBarReaderViewImpl_Simulator.m
+PODS_MLPLAYER_ZBARSDK_EXCLUDED_SOURCE_FILE_NAMES[sdk=iphonesimulator*][arch=*] = ZBarReaderViewImpl_Capture.m ZBarCaptureReader.m
+PODS_MLPLAYER_ZBARSDK_GCC_PREPROCESSOR_DEFINITIONS = NDEBUG=1
+PODS_MLPLAYER_ZBARSDK_HEADER_SEARCH_PATHS = ${PODS_ROOT}/ZBarSDK/include
+PODS_MLPLAYER_ZBARSDK_OTHER_LDFLAGS = -l"iconv" -framework "AVFoundation" -framework "CoreGraphics" -framework "CoreMedia" -framework "CoreVideo" -framework "QuartzCore"

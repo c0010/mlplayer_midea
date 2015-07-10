@@ -1,0 +1,23 @@
+//
+//  CMSubscribeView.h
+//  MLPlayer
+//
+//  Created by lhx on 15/5/26.
+//  Copyright (c) 2015年 w. All rights reserved.
+//
+
+#import <UIKit/UIKit.h>
+#import "cmcategory.h"
+
+@interface CMSubscribeView : UIView
+{
+    UIScrollView*  _blankView;
+    CMCategoryItem* categoryItem;
+}
+
+@property (strong, nonatomic) UIButton *blankButton;
+
+- (id)initWithFrame:(CGRect)frame CMCategoryItem :(CMCategoryItem *)item;
+- (void)setCMSubscribeViewFrame:(CGRect)frame;
+
+@end

@@ -1,0 +1,580 @@
+// //////////////////////////////////////////////////////////////////////////////
+//  Copyright (c) 2009,
+//  All rights reserved.
+//
+//  FileName:
+//  Description:网络Http层接口类
+//  Author:Roy Bi
+// //////////////////////////////////////////////////////////////////////////////
+
+//当前模块是网络模块
+#define FILE_MOD CM_LOGM_NET
+
+
+#include "stdafx.h"
+#include "cmsession.h"
+#include "cmglobal.h"
+#include "cmversion.h"
+#include "cmsettings.h"
+#include "tinyxml.h"
+#include "cmgloballistener.h"
+#include "version.h"
+#include "desencrypt.h"
+#include "utf8ncpy.h"
+#include "cmsessionsequence.h"
+
+#define SESSION_RET_MAX  524288
+
+CMSession::CMSession(IMNotifySession* pNotify)
+{
+    //#if defined(PLAT_IOS)
+    //    CMNotifySessionIos *notify_ios= new CMNotifySessionIos(pNotify);
+    //    m_pNotify=notify_ios;
+    //#else
+    
+    m_pNotify = pNotify;
+    //#endif
+    m_pHttp = new CMHttpC(this);
+    m_pBuf = NULL;
+    m_nCurCmd = 0;
+    m_bRun = FALSE;
+    m_bPost = FALSE;
+    
+    sCustomer[0] = '\0';
+    sUsername[0] = '\0';
+    sPassword[0] = '\0';
+    
+}
+
+CMSession::~CMSession()
+{
+    //#if defined(PLAT_IOS)
+    //    SAFEDELETE(m_pNotify)
+    //#endif
+    m_pNotify = NULL;
+    SAFEDELETE(m_pHttp);
+    SAFEDELETE(m_pBuf);
+}
+
+void CMSession::LogIn(const char* sEid, const char* sName, const char* sPass,const char* sUid,BOOL isReLogin,int nLoginType)
+{
+    m_bRun = TRUE;
+    
+    utf8ncpy(sCustomer, sEid, 99);
+    
+    utf8ncpy(sUsername, sName, 99);
+    
+    utf8ncpy(sPassword, sPass, 99);
+    
+    utf8ncpy(sUserid, sUid, 99);
+    
+    if (!isReLogin) {
+        m_nCurCmd = SERVICE_LOGIN;
+    }
+
+    LogIn(nLoginType);
+}
+
+void CMSession::LogIn(int nLoginType)
+{
+	const CHAR* pEid = CMGlobal::TheOne().Encode(sCustomer);
+    const CHAR* pName = CMGlobal::TheOne().Encode(sUsername);
+
+    const CHAR* pPass = NULL;
+
+
+    //当美信跳转 pwd无需加密
+    //    if(nLoginType == 2)
+    
+    pPass = CMGlobal::TheOne().Encode(sPassword);
+    //    else
+    //   	pPass = CMGlobal::TheOne().Encode((const CHAR*)CMGlobal::TheOne().EncryptPass(sPassword));
+
+    const CHAR* pUid = CMGlobal::TheOne().Encode(sUserid);
+    
+	CMSystemInfo& sysinfo = CMGlobal::TheOne().SystemInfo();
+    char sUrl[1024] = {0};
+	
+    snprintf(sUrl,sizeof(sUrl),"%s?no=%d&os=%d&ver=%d&wh=%dX%d&eid=%s&logintype=%d&loginname=%s&pwd=%s&userid=%s&lang=%s&accept=%s",(const char*)SETTING.GetCenterServerUrl() ,
+             SERVICE_LOGIN, CMVersion::SystemVersion().Platform, MLPAYER_VER, sysinfo.ScreenWidth, sysinfo.ScreenHeight, pEid, nLoginType, pName,
+             pPass,pUid,sysinfo.CurrLang, sysinfo.AcceptType);
+    
+    SAFEDELETE(pEid);
+	SAFEDELETE(pName);
+	SAFEDELETE(pPass);
+    SAFEDELETE(pUid);
+	
+	m_req.Clean();
+	m_req.SetType(CMHTTPReqHeader::GET);
+    m_req.CreateDefault();
+    m_req.AddValue(HH_ATYPE, CMString(L"text/html,application/xml"));
+    m_req.AddValue(HH_ACHARSET, CMString(L"utf-8"));
+    
+    m_req.SetUrl(sUrl);
+    
+	m_pHttp->Request(m_req);
+}
+
+
+void CMSession::Command(UINT32 nCmdID, const CMString& sParams)
+{
+	if (CMGlobal::TheOne().IsOffline())
+	{
+		if(m_pNotify)
+			m_pNotify->OnSessionCmd(nCmdID, MERN_OFFLINE, NULL);
+        return;
+	}
+    
+    m_bRun = TRUE;
+    
+    if (m_nCurCmd != 0)
+    {
+        m_bRun = FALSE;
+		if(m_pNotify)
+			m_pNotify->OnSessionCmd(nCmdID, MERE_NOT_ENOUGH_RESOURCE, NULL);
+        return;
+    }
+    
+    m_nCurCmd = nCmdID;
+    m_sParams = sParams;
+    m_bPost = FALSE;
+    
+    m_req.Clean();
+    m_req.SetType(CMHTTPReqHeader::GET);
+    m_req.CreateDefault();
+    m_req.AddValue(HH_ATYPE, CMString(L"text/html,application/xml"));
+    m_req.AddValue(HH_ACHARSET, CMString(L"utf-8"));
+    
+    Command();
+}
+
+void CMSession::CommandPost(UINT32 nCmdID, const CHAR* sParams, const CHAR* pData, INT32 nLen)
+{
+	if (CMGlobal::TheOne().IsOffline())
+	{
+		if(m_pNotify)
+			m_pNotify->OnSessionCmd(nCmdID, MERN_OFFLINE, NULL);
+        return;
+	}
+    
+    m_bRun = TRUE;
+    
+    if (m_nCurCmd != 0)
+    {
+        m_bRun = FALSE;
+		if(m_pNotify)
+			m_pNotify->OnSessionCmd(nCmdID, MERE_NOT_ENOUGH_RESOURCE, NULL);
+        return;
+    }
+    
+    m_nCurCmd = nCmdID;
+    m_sParams = sParams;
+    m_bPost = TRUE;
+    
+    m_req.Clean();
+    m_req.SetType(CMHTTPReqHeader::POST);
+    m_req.CreateDefault();
+    m_req.AddValue(HH_ATYPE, CMString(L"text/html,application/xml"));
+    m_req.AddValue(HH_CTYPE,CMString(L"multipart/form-data"));
+    m_req.AddValue(HH_ACHARSET, CMString(L"utf-8"));
+    m_req.SetPostData(pData, nLen);
+    
+    Command();
+}
+
+//Post form数据的命令
+void CMSession::CommandPost(UINT32 nCmdID,const CHAR* sParams, CMList<FormData> lstForm, const CHAR* sSequence)
+{
+	if (CMGlobal::TheOne().IsOffline())
+	{
+		if(m_pNotify)
+			m_pNotify->OnSessionCmd(nCmdID, MERN_OFFLINE, NULL);
+        return;
+	}
+    
+    m_bRun = TRUE;
+    
+    if (m_nCurCmd != 0)
+    {
+        m_bRun = FALSE;
+		if(m_pNotify)
+			m_pNotify->OnSessionCmd(nCmdID, MERE_NOT_ENOUGH_RESOURCE, NULL);
+        return;
+    }
+    
+    m_nCurCmd = nCmdID;
+    m_sParams = sParams;
+    m_bPost = TRUE;
+    
+    m_req.Clean();
+    m_req.SetType(CMHTTPReqHeader::POST);
+    m_req.CreateDefault();
+    m_req.AddValue(HH_ATYPE, CMString(L"text/html,application/xml"));
+    m_req.AddValue(HH_ACHARSET, CMString(L"utf-8"));
+    m_req.SetFormPostData(lstForm);
+    
+    if (strlen(sSequence) > 0)
+    {
+        m_sSequence = sSequence;
+        CMSessionSequence::GetInstance()->Append(this);
+    }
+    else
+        Command();
+}
+
+void CMSession::Command()
+{
+    CMString sServerUrl,sSID;
+    if(m_nCurCmd == SERVICE_GETCUSTOMERLIST || m_nCurCmd == SERVICE_RETRIEVEPASSWD)
+    {
+    	sServerUrl = SETTING.GetCenterServerUrl();
+    }
+    else
+    {
+    	sServerUrl = SETTING.GetServerUrl();//"http://192.168.0.96:8088/MLService";
+        if (sServerUrl.IsEmpty()) {
+            sServerUrl = SETTING.GetCenterServerUrl();
+        }
+        
+		if (!CMGlobal::TheOne().GetSessionID(sSID)
+            && m_nCurCmd != SERVICE_RETRIEVEPASSWD)
+        {
+            CM_ERRP("CMSession Cmd %d GetSessionID failed", m_nCurCmd);
+			
+            //重登录
+            LogIn(1);
+            return;
+        }
+	}
+    
+	char sUrl[4096];
+    
+    //加入ver参数
+    if (!m_sParams.IsEmpty())
+        snprintf(sUrl,sizeof(sUrl),"%s?sid=%s&no=%d&%s&ver=%d", (const char*)sServerUrl, (const char*)sSID, m_nCurCmd,(const char*)m_sParams,MLPAYER_VER);
+	else
+        snprintf(sUrl,sizeof(sUrl),"%s?sid=%s&no=%d&ver=%d", (const char*)sServerUrl, (const char*)sSID, m_nCurCmd,MLPAYER_VER);
+    
+    //    if (!m_sParams.IsEmpty())
+    //        sprintf(sUrl,"%s?sid=%s&no=%d&%s", (const char*)sServerUrl, (const char*)sSID, m_nCurCmd,(const char*)m_sParams);
+    //	else
+    //        sprintf(sUrl,"%s?sid=%s&no=%d", (const char*)sServerUrl, (const char*)sSID, m_nCurCmd);
+    m_req.SetUrl(sUrl);
+
+    m_pHttp->Request(m_req);
+}
+
+BOOL CMSession::IsRunning()
+{
+    return m_bRun;
+}
+
+void CMSession::Cancel()
+{
+    if (m_sSequence.length() > 0)
+    {
+        CMSessionSequence::GetInstance()->Remove(this);
+        m_sSequence = "";
+    }
+
+    m_pHttp->Cancel();
+    m_nCurCmd = 0;
+    m_sParams.Empty();
+    m_bRun = FALSE;
+}
+
+void CMSession::OnResponse(UINT32 nCode, const CMHTTPRspHeader* pRespHeader)
+{
+    UINT32 nRet = MERE_SERVER;
+    if (nCode == MER_OK)
+    {
+        ASSERT(pRespHeader != NULL);
+        
+        UINT32 httpRet = pRespHeader->GetHttpReturn();
+        
+        if (httpRet == 200 || httpRet == 206)
+        {
+            CMString sVal;
+            
+            //判断是否wap网关的无聊返回，如果是则继续请求一次
+            if (pRespHeader->GetValue(HH_CTYPE, sVal))
+            {
+                if (sVal.Find(L"text/vnd.wap.wml") >= 0)
+                {
+                    m_pHttp->Request();
+                    return;
+                }
+            }
+            if (pRespHeader->GetValue(HH_CLENGTH, sVal))
+            {
+                sVal.Trim();
+                INT32 nLen = _mwtoi(sVal);
+                if (nLen >= SESSION_RET_MAX)
+                {
+                    //命令获取返回不能大于最大限制
+                    CM_ERRP("CMSession::OnResponse %d too large", nLen);
+                    goto err;
+                }
+                if (nLen > 0)
+                {
+                    if (m_pBuf)
+                    {
+                        delete m_pBuf;
+                        m_pBuf = NULL;
+                    }
+                    m_pBuf = new INT8[nLen + 1];
+                    m_pHttp->Read(m_pBuf, nLen);
+                }
+                else
+                {
+                	CM_ERRP("CMSession::OnResponse content-length is %s, not valid", (const CHAR*)sVal);
+    				goto err;
+                }
+            }
+            else if(pRespHeader->IsChunked())
+            {
+            	//不支持断点续传
+                if (m_pBuf)
+                {
+                    delete m_pBuf;
+                    m_pBuf = NULL;
+                }
+                m_pBuf = new INT8[SESSION_RET_MAX];
+                m_pHttp->Read(m_pBuf, SESSION_RET_MAX);
+            }
+            else
+            {
+                CM_ERR("CMSession::OnResponse no content-length and no encoder");
+                goto err;
+            }
+
+            //对于nLen <= 0的情况不做一般错误处理
+            return;
+        }
+        else
+        {
+            CM_ERRP("CMSession::OnResponse http ret %d error", httpRet);
+            nRet = httpRet;
+        }
+    }
+    else
+    {
+        CM_ERRP("CMSession::OnResponse ret %d error", nCode);
+        nRet = nCode;
+    }
+    
+err:
+    //未成功获取信息，清理，等待下次获取
+    if (m_pBuf)
+    {
+        delete m_pBuf;
+        m_pBuf = NULL;
+    }
+    
+    UINT32 nTmp = m_nCurCmd;
+    m_nCurCmd = 0;
+    m_sParams.Empty();
+    
+    m_bRun = FALSE;
+    //重置http
+    m_pHttp->Cancel();
+    
+    if (m_sSequence.length() > 0)
+    {
+        CMSessionSequence::GetInstance()->Remove(this);
+        m_sSequence = "";
+    }
+    
+	if(m_pNotify)
+	{
+		m_pNotify->OnSessionCmd(nTmp, nRet, NULL);
+	}
+}
+
+void CMSession::OnRead(UINT32 nCode, INT32 nLen)
+{
+    UINT32 nRet = MERE_SERVER;
+    
+    if (nCode == MER_OK)
+    {
+        m_pBuf[nLen] = '\0';
+        TiXmlDocument *pConf = new TiXmlDocument();
+
+        //DES解密xml
+//		if (MLPAYER_VER > 121) {
+//			char* buf = DesEncrypt::doDecrypt(m_pBuf, kDesSecret);
+//			//认为解密出来的一定比原来的少，不做长度检查。因为这种加解密方案是临时方案，不做处理
+//			strcpy(m_pBuf, buf);
+//			SAFEDELETE(buf);
+//
+//		}
+        pConf->Parse((const char*)m_pBuf, 0, TIXML_ENCODING_UTF8);
+        CM_LOGP(CM_LOGL_DEBUG, "buf:%s\n", m_pBuf);
+        if (!pConf->Error())
+        {
+            //获得根元素res。
+            TiXmlElement *pRoot = pConf->RootElement();
+            
+            if(pRoot)
+            {
+                INT32 nRetID = 0;
+                if (pRoot->QueryIntAttribute("no", &nRetID) != TIXML_SUCCESS)
+                {
+                    CM_ERRP("CMSession::OnRead %d xml no RetID", m_nCurCmd);
+                    SAFEDELETE(pConf);
+					nRet = MERN_ERROR;
+                    goto err;
+                }
+                
+                INT32 nErr = 0;
+                if(pRoot->QueryIntAttribute("errno", &nErr) == TIXML_SUCCESS)
+                {
+                    if (nErr == 0)
+                    {
+                        if (nRetID == SERVICE_LOGIN)
+                        {
+                            //记录SID
+                            CMString sSID = pRoot->Attribute("sid");
+                            CMSettings::GetInstance()->SetSID((const char*) sSID);
+
+                            CMGlobal::TheOne().SetSessionID(sSID);
+                            CM_LOGP(CM_LOGL_INFO, "server longin sid is %s", (const CHAR*)sSID);
+                            
+                            if (m_nCurCmd == nRetID)
+                            {
+                                //是登录命令，返回成功
+                                nRet = MER_OK;
+                            }
+                            else
+                            {
+                                //只是普通命令的登录的返回，继续普通操作
+                                SAFEDELETE(pConf);
+                                Command();
+                                return;
+                                
+                            }
+                        }
+                        else
+                        {
+                            ASSERT(m_nCurCmd == nRetID);
+                            nRet = MER_OK;
+                        }
+                        
+                    }
+                    else if (nErr == MERS_NEEDLOGIN)
+                    {
+                        //自动重登录
+                        ASSERT(nRetID != SERVICE_LOGIN);
+                        SAFEDELETE(pConf);
+                        CMGlobal::TheOne().SetSessionID(L""); //认为没有登录
+                        LogIn(SETTING.GetCustomer(),SETTING.GetUserName(),SETTING.GetUserPass(),SETTING.GetUserId(),TRUE,1);
+                        return;
+                    }
+					else if(nErr == -4)
+					{
+						//m_nCurCmd = 0;
+						//m_sParams.Empty();
+						//m_bRun = FALSE;
+						//m_pHttp->Cancel();
+						CMGlobalListener* pGlobalListener = CMGlobalListener::GetListener();
+#if defined(PLAT_AND)
+						if (pGlobalListener == NULL)
+						{
+							pGlobalListener = new CMGlobalListenerAnd();
+							CMGlobalListener::SetListener(pGlobalListener);
+						}
+#endif
+						if(pGlobalListener)
+							pGlobalListener->OnKicked(nErr);
+						nRet = -4;
+						//return;
+					}
+                    else if(nErr == MERS_USERNAMEPWD && m_nCurCmd != SERVICE_LOGIN && m_nCurCmd != SERVICE_ALTERPWD)
+                    {
+                        
+                        //重登陆密码错误,则回到登录界面
+                        CMGlobalListener* pGlobalListener = CMGlobalListener::GetListener();
+#if defined(PLAT_AND)
+						if (pGlobalListener == NULL)
+						{
+							pGlobalListener = new CMGlobalListenerAnd();
+							CMGlobalListener::SetListener(pGlobalListener);
+						}
+#endif
+						if(pGlobalListener)
+							pGlobalListener->OnKicked(nErr);
+						nRet = -4;
+                        
+                    }
+                    else
+                    {
+                        //只处理重登录，其他的业务层自行处理
+                    	CM_LOGP(CM_LOGL_WARNING, "CMSession::pConf cmd %d err %d notify %0x", nRetID, nErr, m_pNotify);
+                        nRet = MER_OK;
+                    }
+                    
+                    CM_LOGP(CM_LOGL_INFO, "CMSession::OnSessionCmd %d return %d xml %x", nRetID, nRet, pConf);
+                    //成功的清理
+                    nRetID = m_nCurCmd;
+                    m_nCurCmd = 0;
+                    m_sParams.Empty();
+                    m_bRun = FALSE;
+                    
+                    if (m_sSequence.length() > 0)
+                    {
+                        CMSessionSequence::GetInstance()->Remove(this);
+                        m_sSequence = "";
+                    }
+                    
+					if(m_pNotify&&nRet!=-4)
+					{
+						m_pNotify->OnSessionCmd(nRetID, nRet, pConf);
+                        //                        if (m_pHttp)
+                        //                            m_pHttp->Cancel();
+                        
+                        
+					}
+                    
+                    SAFEDELETE(pConf);
+                    return;
+                }
+                else
+                {
+                    CM_ERR("CMSession::OnRead no attritute errno");
+                    nRet = MERE_SERVER;
+                }
+            }
+            else
+            {
+                CM_ERR("CMSession::OnRead xml no root");
+                nRet = MERE_SERVER;
+            }
+        }
+        else
+        {
+            CM_ERR("CMSession::OnRead wrong xml");
+            nRet = MERE_SERVER;
+        }
+        SAFEDELETE(pConf);
+    }
+    else
+    {
+        nRet = nCode;
+    }
+    
+err:
+    UINT32 nTmp = m_nCurCmd;
+    m_nCurCmd = 0;
+    m_sParams.Empty();
+    
+    m_bRun = FALSE;
+    m_pHttp->Cancel();
+    if (m_sSequence.length() > 0)
+    {
+        CMSessionSequence::GetInstance()->Remove(this);
+        m_sSequence = "";
+    }
+    if(m_pNotify)
+		m_pNotify->OnSessionCmd(nTmp, nRet, NULL);
+
+}

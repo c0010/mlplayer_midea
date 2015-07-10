@@ -1,0 +1,283 @@
+﻿//
+//  CMNavgateItem.m
+//  MLPlayer
+//
+//  Created by sunjj on 12-2-24.
+//  Copyright 2012 w. All rights reserved.
+//
+
+
+#import "CMNavgateItem.h"
+#import "CMInfoCommentControl.h"
+#import "cmfavorites.h"
+#import "CMClassInfoControl.h"
+#import "CMSpecialtopicControl.h"
+#import "CMViewController.h"
+#import "CMNewsInfoControl.h"
+#import "CMPlayerControl.h"
+#import "CMCourseDetailControl.h"
+#import "CMRecentView.h"
+#import "cmcoursedownload.h"
+#import "CMShakeController.h"
+#import "cmshake.h"
+#import "CMPositionCourseControl.h"
+#import "CMFavoriteControl.h"
+#import "CMShakeListController.h"
+#import "CMMarkViewController.h"
+
+@implementation CMNavgateItem
+
+
+//进入课程详情
+-(void)NavgateItemforClassDetail:(id<CMNavgateItemDelegate>)control  item:(TBrowserItem&)item
+{
+    
+    if([control GetContenthandler]==nil)
+        return ;
+    
+	NSString* sTitle = nil;
+	NSString* sUrl = nil;
+	NSString* sType = nil;// [NSString stringWithUTF8String:item.sType];
+	
+	NSString* sFlag = nil;
+	NSString* sID	= nil;
+    
+    //NSString* setID	= nil;//课件详情cmnewsinfo才使用
+    
+        if ([sFlag isEqualToString:@""] || [sFlag length] <= 0) {
+        
+		return;
+	}
+	
+	if ([sFlag isEqualToString:@"news"] || [sFlag isEqualToString:@"kb"]) {
+		sTitle = [NSString stringWithUTF8String:item.sTitle];
+		sUrl = [NSString stringWithUTF8String:item.sUrl];
+		sID = [NSString stringWithUTF8String:item.sID];
+		sType = [NSString stringWithUTF8String:item.sType];
+	}
+    else if ([sFlag isEqualToString:@"course"]) {
+		if(item.nModel==0 && strlen(((TClassItem&)item).sSpecialtopic) > 0)
+		{
+			CMSpecialtopicControl* specialtopicControl=[[CMSpecialtopicControl alloc] init];
+			specialtopicControl.title = [NSString stringWithUTF8String:item.sTitle];
+			
+            
+			[specialtopicControl setSpecialtopicID:[NSString stringWithUTF8String:((TClassItem&)item).sSpecialtopic]];
+			specialtopicControl.modalTransitionStyle = UIModalTransitionStyleFlipHorizontal;
+			
+			specialtopicControl.navigationController.navigationBarHidden = NO;
+			specialtopicControl.tabBarController.tabBar.hidden = YES;
+			specialtopicControl.hidesBottomBarWhenPushed = YES;
+			//specialtopicControl.navigationController.delegate = self;
+			specialtopicControl.view.backgroundColor = [UIColor clearColor];
+			
+			[((UIViewController*)control).navigationController pushViewController:specialtopicControl animated:YES];
+			
+            CMRELEASE(specialtopicControl);
+			return;
+		}
+		else 
+		{
+			
+			CMCourseDetailControl* coursedetailControl=[[CMCourseDetailControl alloc] init];            
+
+            coursedetailControl.bIsShake = bIsShake;
+			[coursedetailControl setInfo:item];
+            
+			coursedetailControl.modalTransitionStyle = UIModalTransitionStyleFlipHorizontal;
+			
+			coursedetailControl.navigationController.navigationBarHidden = NO;
+			coursedetailControl.tabBarController.tabBar.hidden = YES;
+			coursedetailControl.hidesBottomBarWhenPushed = YES;
+			//classInfoControl.navigationController.delegate = self;
+			coursedetailControl.view.backgroundColor = [UIColor whiteColor];
+			
+			[((UIViewController*)control).navigationController pushViewController:coursedetailControl animated:YES];
+			
+            CMRELEASE(coursedetailControl);
+			return;
+		}
+
+	}
+    
+}
+
+-(void)NavgateItemforCoursewareDetail:(id<CMNavgateItemDelegate>)control   index:(int)index
+{
+    if([control GetContenthandler]==nil)
+        return ;
+    
+    if(index<0)
+        return;
+}
+
+- (void)pushViewController:(id<CMNavgateItemDelegate>)control toViewController:(CMViewController*)receiveControl withAnimated:(BOOL)animated
+{
+    receiveControl.navigationController.navigationBarHidden = NO;
+    receiveControl.tabBarController.tabBar.hidden           = YES;
+    receiveControl.hidesBottomBarWhenPushed                 = YES;
+    receiveControl.bIsPush                                  = bIsPush;
+    receiveControl.view.backgroundColor                     = [UIColor whiteColor];
+    [((UIViewController*)control).navigationController pushViewController:receiveControl animated:!bIsPush];
+}
+
+-(void) NavgateItem:(id<CMNavgateItemDelegate>)control item:(TBrowserItem&)item
+{
+    if (&item == nil) {
+		return;
+	}
+    
+	NSString* sFlag  = [NSString stringWithUTF8String:item.sFlag];
+    
+	if ([sFlag isEqualToString:@""] || [sFlag length] <= 0) {
+		return;
+	}
+
+    if(item.nModel==0 && [sFlag isEqualToString:@"course"])
+    {
+        CMCourseDetailControl* coursedetailControl = [[CMCourseDetailControl alloc] init];
+        [coursedetailControl setInfo:item];
+        [self pushViewController:control toViewController:coursedetailControl withAnimated:YES];
+        CMRELEASE(coursedetailControl);
+        return;
+    }
+    
+    TCoursewareItem courseitem = (TCoursewareItem&)item;
+    NSString* sTitle = [NSString stringWithUTF8String:courseitem.sTitle];
+    NSString* sUrl   = [NSString stringWithUTF8String:courseitem.sUrl];
+    NSString* sID    = [NSString stringWithUTF8String:courseitem.sID];
+    NSString* sType  = [NSString stringWithUTF8String:courseitem.sType];
+    NSString* setID  = [NSString stringWithUTF8String:courseitem.sSetID];//课件详情cmnewsinfo才使用
+
+    NSString *sOrientation;
+    if ([sFlag isEqualToString:@"news"]) {
+        sOrientation = @"P";
+    }
+    else{
+        sOrientation = [NSString stringWithUTF8String:courseitem.sOrientation];
+        if (!sOrientation || [sOrientation isEqual:@""]) {
+            sOrientation = @"P";
+        }
+    }
+    
+	if ([sType isEqualToString:@"text/html"] || [sType isEqualToString:@"text/vnd.wap.wml"]) {
+        CMNewsInfoControl* classInfoControl = [[CMNewsInfoControl alloc] initWithOrientation:sOrientation];
+		classInfoControl.title = @"";
+        classInfoControl.sflag = sFlag;
+		[classInfoControl setInfo:item url:sUrl];
+        
+        if ([sFlag isEqualToString:@"news"]) {
+            classInfoControl.classid = sID;
+        }
+        else
+        {
+            classInfoControl.classid      = setID;
+            classInfoControl.coursewareid = sID;
+        }
+        
+        [self pushViewController:control toViewController:classInfoControl withAnimated:YES];
+        CMRELEASE(classInfoControl);
+	}
+    else if ([sType isEqualToString:@"video/3mv"] || [sType isEqualToString:@"audio/3ma"] || [sType isEqualToString:@"audio/aac"] || [sType isEqualToString:@"video/mp4"]) {
+		
+		int m_nMode = 0;
+     	
+		if([sType isEqualToString:@"video/3mv"] || [sType isEqualToString:@"video/mp4" ])
+		{
+			m_nMode = EMode_3mv;
+		}
+		else if ([sType isEqualToString:@"audio/3ma"])
+		{
+			m_nMode = EMode_3ma;
+		}
+		else if ([sType isEqualToString:@"audio/aac"])
+		{
+			m_nMode = EMode_aac;
+		}
+		else
+		{
+			[tool ShowAlert:I(@"未知的格式")];
+			return;
+		}
+        
+        if(CMGlobal::TheOne().IsOffline())
+        {
+            //判断是否下载
+            TCoursewareItem titem = (TCoursewareItem&)item;
+            
+            if(!CMCourseDownload::GetInstance()->IsDonwloaded(titem))
+            {
+                [tool ShowAlert:I(@"网络不给力")];
+                return;
+            }
+        }
+//        TCoursewareItem titem = (TCoursewareItem&)item;
+        if ([tool isExistWifi])
+        {
+            
+            CMPlayerControl* playerControl = [[CMPlayerControl alloc] init];
+            
+            
+            if (![playerControl setItem:(TCoursewareItem&)item]) {
+                
+                [tool ShowAlert:I(@"视频文件出错，无法播放！")];
+                
+                CMRELEASE(playerControl);
+                return;
+            }
+            
+            playerControl.classid                                  = setID;
+            playerControl.title                                    = sTitle;
+            playerControl.navigationController.navigationBarHidden = NO;
+            playerControl->bIsHiddenList = YES;
+            playerControl.tabBarController.tabBar.hidden           = YES;
+            playerControl.hidesBottomBarWhenPushed                 = YES;
+            
+            [((UIViewController*)control).navigationController pushViewController:playerControl animated:!bIsPush];
+            
+            CMRELEASE(playerControl);
+        }
+        else
+        {
+            TCoursewareItem titem = (TCoursewareItem&)item;//不声明下直接传item给playercontroller，会出现内容乱码，还未找到原因 #王建斌
+            CMAlertView *alert = [[CMAlertView alloc]initWithTitle:I(@"提示") message:I(@"当前不是wifi环境，是否继续播放？") cancelButtonTitle:I(@"取消") otherButtonTitles:I(@"确定") completionBlock:^(NSUInteger buttonIndex, CMAlertView *alertView) {
+                if (buttonIndex == BUTTON_CONFIRM_TAG)
+                {
+                    CMPlayerControl* playerControl = [[CMPlayerControl alloc] init];
+                    
+                    
+                    if (![playerControl setItem:(TCoursewareItem&)titem]) {
+                        
+                        [tool ShowAlert:I(@"视频文件出错，无法播放！")];
+                        
+                        CMRELEASE(playerControl);
+                        return;
+                    }
+                    
+                    playerControl.classid                                  = setID;
+                    playerControl.title                                    = sTitle;
+                    playerControl.navigationController.navigationBarHidden = NO;
+                    playerControl.tabBarController.tabBar.hidden           = YES;
+                    playerControl.hidesBottomBarWhenPushed                 = YES;
+                    
+                    [((UIViewController*)control).navigationController pushViewController:playerControl animated:!bIsPush];
+                    
+                    CMRELEASE(playerControl);
+                }
+            }];
+            [alert show];
+        }
+        
+		
+		
+	}else if ([ sType isEqualToString:@"application/x-shockwave-flash"]) {
+		[tool ShowAlert:I(@"此机型暂不支持flash")];
+		return;
+	}
+	else {
+		[tool ShowAlert:I(@"未知的格式")];
+	}
+
+}
+
+@end

@@ -1,0 +1,115 @@
+//
+//  CMMyFavoriteCell.m
+//  MLPlayer
+//
+//  Created by hushengwu on 15/1/9.
+//  Copyright (c) 2015年 w. All rights reserved.
+//
+
+#import "CMMyFavoriteCell.h"
+#import "tool.h"
+@implementation CMMyFavoriteCell
+@synthesize lbltitle = _lbltitle;
+@synthesize lbltime  = _lbltime;
+@synthesize typeImageView = _typeImageView;
+/*
+// Only override drawRect: if you perform custom drawing.
+// An empty implementation adversely affects performance during animation.
+- (void)drawRect:(CGRect)rect {
+    // Drawing code
+}
+*/
+
+- (id)initWithStyle:(UITableViewCellStyle)style reuseIdentifier:(NSString *)reuseIdentifier
+{
+    self = [super initWithStyle:style reuseIdentifier:reuseIdentifier];
+    if (self) {
+        // Initialization code
+        _lbltitle = [[UILabel alloc]init];
+        _lbltitle.backgroundColor = [UIColor clearColor];
+        _lbltitle.numberOfLines = 3;
+        _lbltitle.textAlignment = UITextAlignmentLeft;
+        _lbltitle.font = [UIFont systemFontOfSize:16];
+        _lbltitle.textColor = UIColorRGB(0x3a3a3a);
+        
+        _lbltime = [[UILabel alloc]init];
+        _lbltime.font = [UIFont systemFontOfSize:12];
+        _lbltime.textColor= UIColorRGB(0xa7a7a7);
+        [_lbltime setBackgroundColor:[UIColor clearColor]];
+        _lbltime.textAlignment = UITextAlignmentLeft;
+        
+        _typeImageView = [[UIImageView alloc]init];
+        _typeImageView.image = [UIImage imageNamed:@"classMark"];
+        
+        [self.contentView addSubview:_lbltitle];
+        [self.contentView addSubview:_lbltime];
+        [self.contentView addSubview:_typeImageView];
+        
+    }
+    return self;
+}
+
+- (void)setSelected:(BOOL)selected animated:(BOOL)animated
+{
+    [super setSelected:selected animated:animated];
+    
+    // Configure the view for the selected state
+}
+
+//获取cell高度
++(CGFloat)GetCellHeight:(TBrowserItem&)browserItem  width:(int)width{
+    CGFloat hg = 8; //cell 间距
+    
+    NSString *cellText = [NSString stringWithUTF8String:browserItem.sTitle];
+    //字体高度
+    CGSize constraintSize = CGSizeMake(300, MAXFLOAT);
+    
+    CGSize labelSize = [cellText sizeWithFont:[UIFont systemFontOfSize:16] constrainedToSize:constraintSize lineBreakMode:UILineBreakModeWordWrap];
+    if (labelSize.height > 60.0) {
+        hg += 60.0;
+    }
+    else
+        hg += labelSize.height; // subtitle height
+    
+    hg += 25; // time height
+    //判断同系列
+    
+    return hg;
+}
+
+-(void)setcellinfo:(TBrowserItem&)browserItem{
+    self.lbltitle.text = [NSString stringWithUTF8String:browserItem.sTitle];//标题
+    self.lbltime.text = [NSString stringWithUTF8String:browserItem.sPubdate];//发布时间
+    
+    if(browserItem.nModel==0){
+        self.typeImageView.hidden = NO;
+    }
+    else{
+        self.typeImageView.hidden = YES;
+    }
+    
+}
+
+
+//绘制
+- (void)layoutSubviews{
+    [super layoutSubviews];
+    //CGFloat boundsX = 5;
+    CGFloat boundsY = 8;
+    
+    CGSize size = CGSizeMake(300,MAXFLOAT);
+    CGSize labelsize = [_lbltitle.text sizeWithFont:_lbltitle.font constrainedToSize:size lineBreakMode:UILineBreakModeWordWrap];
+    if (labelsize.height > 60.0) {
+        labelsize.height = 60.0;
+    }
+    _lbltitle.frame = CGRectMake(10.0, boundsY, 300.0, labelsize.height);
+    boundsY += labelsize.height;
+    
+    CGSize labelSize=[_lbltime.text sizeWithFont:_lbltime.font forWidth:150 lineBreakMode:UILineBreakModeWordWrap];
+    _lbltime.frame = CGRectMake(10.0, boundsY, labelSize.width, 25.0);
+    
+    _typeImageView.frame = CGRectMake(CGRectGetMaxX(_lbltime.frame) + 15.0, boundsY + 5.0, _typeImageView.image.size.width, _typeImageView.image.size.height);
+}
+
+
+@end

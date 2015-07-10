@@ -1,0 +1,100 @@
+/*
+ * cmsearchcourse.h
+ *
+ *  Created on: 2013-9-23
+ *      Author: mazhen
+ */
+
+#ifndef CMSEARCHCOURSE_H_
+#define CMSEARCHCOURSE_H_
+
+#include "cmcommon.h"
+#include "cmhandler.h"
+
+template <typename T> class CMList;
+
+class TSearchItem
+{
+public:
+
+	TSearchItem();
+
+    ~TSearchItem();
+
+    string sID;
+    //标题
+    string sTitle;
+    //搜索类型
+    string sFlag;
+
+    //获取子节点数量
+    int ChildItemCount();
+
+    //获取子节点
+    TSearchItem* GetChildItem(int nIndex);
+
+    friend class CMSearchCourse;
+
+    void SetSearchCountSign();
+
+    int GetSearchCount() const;
+
+protected:
+    //搜索次数
+    int nSearchCount;
+
+    BOOL bCanAddHigh;
+
+    //基数排序，针对常用搜索 又小到大
+    void RadixSort();
+
+    int GetNumInPos(int num ,int pos);
+
+private:
+    CMList<TSearchItem*> *m_lstItem;
+
+    string m_sTopID;//父节点id
+
+};
+
+class CMSearchCourse :public CMHandler<TSearchItem*>
+{
+
+public:
+
+	CMSearchCourse(const CMSearchCourse& other);
+
+	CMSearchCourse();
+
+	virtual ~CMSearchCourse();
+    //获取学习分类的关键字
+	void SetListener(IMUpdateDataListener* pUpdateDataListener);
+
+	void GetCourseKey();
+
+	void SetUserData(void* UserData);
+
+	TSearchItem* GetHighSearch();
+
+protected:
+
+	virtual void OnSessionCmd(unsigned int nCmdID, unsigned int nCode, TiXmlDocument* pDoc);
+    //网络回来数据，要入缓存并刷新对象
+    virtual BOOL DoPutItem(TiXmlElement* pItem, sqlite3* db, TSearchItem*& item);
+    //缓存回来数据，读取缓存到对象列表
+    virtual BOOL DoGetCacheItems(sqlite3* db);
+    virtual BOOL DoRefresh(TSearchItem*& obj);
+    virtual BOOL DoUpdate(TSearchItem*  const &obj);
+    virtual BOOL DoCreate(sqlite3* db);
+
+    //更改读取网络数据后不在网络数据范围被的数据库数据
+	BOOL UpdateCache();
+
+private:
+//    string sqlNotin;
+
+    TSearchItem* highSearchItem;//常用搜索
+
+};
+
+#endif /* CMSEARCHCOURSE_H_ */

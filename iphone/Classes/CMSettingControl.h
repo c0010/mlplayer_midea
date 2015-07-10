@@ -1,0 +1,40 @@
+//
+//  CMSettingControl.h
+//  MLPlayer
+//
+//  Created by wuding on 11-5-6.
+//  Copyright 2011 w. All rights reserved.
+//
+
+#import <UIKit/UIKit.h>
+#import "CMViewController.h"
+#import "CMFeedbackControl.h"
+#import "CMPasswdControl.h"
+#import "CMSettingCommControl.h"
+#import "cmsettings.h"
+#import "CMAboutController.h"
+
+@interface CMSettingControl : CMViewController<UITableViewDelegate,UITableViewDataSource,UIActionSheetDelegate,UINavigationBarDelegate>{
+
+	
+	UITableView* tableViews;
+//	UISwitch* mySwitch;
+	
+	UIViewController * CurrentViewController;
+    
+    
+    UISwitch* shakeSwitch;
+  //  UILabel* lbAbout;
+    
+    //UISwitch* autoloadSwitch;
+}
+@property(nonatomic,strong) UITableView *tableViews;
+//@property (nonatomic, strong, readonly) UISwitch* mySwitch;
+//@property(nonatomic, strong)     UILabel* lbAbout;
+@property(nonatomic,strong,readonly)     UISwitch* shakeSwitch;
+//@property(nonatomic,strong,readonly)     UISwitch* autoloadSwitch;
+
+
+
+- (void)presentModallyOn:(UIViewController *)parent;
+@end

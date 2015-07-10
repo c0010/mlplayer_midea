@@ -1,0 +1,1277 @@
+	//
+	//  CMPlayerControl.mm
+	//  MLPlayer
+	//
+	//  Created by wunding on 5/17/11.
+	//  Copyright 2011 w. All rights reserved.
+	//
+
+#import "CMPlayerControl.h"
+#include "cmgeneral.h"
+#include "cmplayerutility.h"
+#include "cmpath.h"
+#import "cmfavorites.h"
+#import "CMInfoCommentControl.h"
+#import "CMInteractViewController.h"
+#import "cmsettings.h"
+#import "qa_ChoiceList.h"
+extern "C" {
+#include "SDL_audio.h"
+#include "SDL_config.h"
+#include "SDL_main.h"
+#include "SDL_assert.h"
+#include "SDL_hints.h"
+#include "SDL_system.h"
+#include "SDL_events.h"
+}
+
+#import <MediaPlayer/MPMusicPlayerController.h>
+#import <AudioToolbox/AudioSession.h>
+#import <AVFoundation/AVFoundation.h>
+
+@implementation PlayNavigationBar
+
+
+//SDL_SetUIViewController(playerControl);
+
+-(void)drawRect:(CGRect)rect
+{
+	UIImage *BackImage = [UIImage imageNamed: @"toolbarbg"];
+    [BackImage drawInRect:CGRectMake(0, 0, self.frame.size.width, self.frame.size.height)];
+}
+@end
+
+@implementation CMPlayerControl
+@synthesize typeFlag;
+@synthesize commentUrl;
+@synthesize titleBar;
+@synthesize titleItem;
+@synthesize progressSlider;
+@synthesize controlBar;
+@synthesize playBut;
+@synthesize currTime;
+@synthesize totaTime;
+@synthesize sflag,classid,coursewareid;
+@synthesize israted,pv,pubdate;
+	//@synthesize backBut;
+@synthesize fullBut;
+	//@synthesize muteBut;
+@synthesize movieView;// = m_movieView;
+@synthesize m_sUrl;
+@synthesize m_sLocalFilePath;
+@synthesize audioContolBar;
+@synthesize audioSlider;
+@synthesize voiceImageView;
+
+	// The designated initializer.  Override if you create the controller programmatically and want to perform customization that is not appropriate for viewDidLoad.
+-(id)init
+{
+		//	[[UIApplication sharedApplication] setStatusBarOrientation:UIInterfaceOrientationLandscapeRight animated:YES];
+	
+	return [self initWithNibName:@"CMPlayerUI" bundle: nil];
+}
+
+- (id)initWithNibName:(NSString *)nibNameOrNil bundle:(NSBundle *)nibBundleOrNil {
+		//	[[UIApplication sharedApplication] setStatusBarHidden:YES withAnimation:UIStatusBarAnimationNone];
+		//	[self.navigationController setNavigationBarHidden:YES animated:NO];
+	
+    self = [super initWithNibName:nibNameOrNil bundle:nibBundleOrNil];
+    if (self) {
+			// Custom initialization.
+		
+    }
+    return self;
+}
+
+
+-(void)setOrientationFrom:(UIInterfaceOrientation) orienFr To:(UIInterfaceOrientation) orienTo {
+		//	UIDeviceOrientation curOrientation = [UIDevice currentDevice].orientation;
+	CGRect bounds = [[UIScreen mainScreen] bounds];
+	CGAffineTransform t;
+	CGFloat r = 0;
+	if (orienFr == UIInterfaceOrientationPortrait) {
+		switch (orienTo) {
+			case UIInterfaceOrientationLandscapeLeft:
+				r = -(M_PI / 2);
+				break;
+			case UIInterfaceOrientationLandscapeRight:
+				r = (M_PI / 2);
+				break;
+			default:
+				break;
+		}
+	}
+	else if (orienFr == UIInterfaceOrientationLandscapeRight){
+		switch (orienTo) {
+			case UIInterfaceOrientationPortrait:
+				r = -(M_PI / 2);
+				break;
+			case UIInterfaceOrientationLandscapeLeft:
+				r = M_PI;
+				break;
+			default:
+				break;
+		}
+	}
+	else {//UIInterfaceOrientationLandscapeLeft
+		switch (orienTo) {
+			case UIInterfaceOrientationPortrait:
+				r = (M_PI / 2);
+				break;
+			case UIInterfaceOrientationLandscapeRight:
+				r = M_PI;
+				break;
+			default:
+				break;			
+		}
+	}
+	
+	
+	if (r != 0 && r!= M_PI) {
+		CGSize sz = bounds.size;
+		bounds.size.width = sz.height;
+		bounds.size.height =sz.width;
+	}
+	
+	t = CGAffineTransformMakeRotation(r);
+	
+	UIApplication * application = [UIApplication sharedApplication];
+	
+    
+	[UIView beginAnimations:@"InterfaceOrientation" context:nil];
+	[UIView setAnimationDuration:[application statusBarOrientationAnimationDuration]];
+	self.view.transform = t;
+	self.view.bounds = bounds;
+	self.view.center = CGPointMake(UI_IOS_WINDOW_WIDTH/2, UI_IOS_WINDOW_HEIGHT/2);
+	[UIView commitAnimations];
+    
+//	[application setStatusBarOrientation:orienTo animated:YES];
+
+
+}
+
+/*
+//#if __IPHONE_OS_VERSION_MAX_ALLOWED < __IPHONE_8_0
+//- (BOOL)shouldAutorotate{
+//    return NO;
+//}
+//
+//#endif
+//
+//-(BOOL)shouldAutorotateToInterfaceOrientation:(UIInterfaceOrientation)toInterfaceOrientation {
+//	
+//	if(toInterfaceOrientation == UIInterfaceOrientationLandscapeRight){
+//		
+//		return YES;
+//	}
+//	else
+//		return NO;
+//}
+
+- (BOOL)shouldAutorotate{
+    return NO;
+}
+
+#endif
+*/
+
+-(BOOL)shouldAutorotateToInterfaceOrientation:(UIInterfaceOrientation)toInterfaceOrientation {
+    
+    if(toInterfaceOrientation == UIInterfaceOrientationLandscapeRight){
+        
+        return YES;
+    }
+    else
+        return NO;
+}
+
+-(NSUInteger)supportedInterfaceOrientations{
+    return UIInterfaceOrientationLandscapeRight;
+}
+
+- (BOOL)shouldAutorotate
+{
+    return NO;
+}
+
+-(UIInterfaceOrientation)preferredInterfaceOrientationForPresentation
+{
+    return UIInterfaceOrientationLandscapeRight;
+}
+#pragma mark -Show List Action
+
+
+-(void)gotoCommentList
+{
+    ispause = TRUE;
+    
+	[contentView setHidden:YES];
+	[myFavoriteBtn setHidden:YES];
+	[myCommentBtn setHidden:YES];
+	istrue = !istrue;
+    
+# if ! __has_feature(objc_arc)
+	CMInfoCommentControl* InfoCommentControl = [[[CMInfoCommentControl alloc] init] autorelease];
+# else
+    CMInfoCommentControl* InfoCommentControl = [[CMInfoCommentControl alloc] init];
+# endif
+    
+    [InfoCommentControl setCourseID:[classid UTF8String] type:[NSString stringWithUTF8String:m_pBrowserItem.sFlag]];
+    
+    NSUserDefaults *ud = [NSUserDefaults standardUserDefaults];
+    [ud setObject:@"1" forKey:@"CommentReplyAdd"];
+    
+	InfoCommentControl.modalTransitionStyle = UIModalTransitionStyleFlipHorizontal;
+	InfoCommentControl.navigationController.navigationBarHidden = NO;
+	InfoCommentControl.tabBarController.tabBar.hidden = YES;
+	InfoCommentControl.hidesBottomBarWhenPushed = YES;
+    InfoCommentControl.title = self.title;
+    InfoCommentControl.coursewareID = [NSString stringWithUTF8String:m_pBrowserItem.sID];
+    
+	InfoCommentControl.view.backgroundColor = [UIColor clearColor];
+	[self.navigationController pushViewController:InfoCommentControl animated:YES];
+}
+
+- (void)showChoiceList
+{
+    NSMutableArray *menuItems = [[NSMutableArray alloc]init];
+    
+    if (m_pBrowserItem.bEnablecomment) {
+        [menuItems addObject:[qa_ChoiceListItem menuItem:I(@"发表评论")
+                                                   image:[UIImage imageNamed:@"learn_postcomment"]
+                                                  target:self
+                                                  action:@selector(gotoCommentList)]];
+    }
+    [menuItems addObject:[qa_ChoiceListItem menuItem:I(@"加入收藏")
+                                               image:[UIImage imageNamed:@"learn_addfavorites"]
+                                              target:self
+                                              action:@selector(MyFavoriteFun)]];
+    if (m_pBrowserItem.bEnablerating) {
+        [menuItems addObject:[qa_ChoiceListItem menuItem:I(@"喜欢") image:[UIImage imageNamed:(israted ? @"newslike_sel" : @"play_like")] target:self action:@selector(gotoLike)]];
+    }
+    [menuItems addObject:[qa_ChoiceListItem menuItem:I(@"分享") image:[UIImage imageNamed:@"share_p"] target:self action:@selector(gotoShare)]];
+    NSMutableArray *realMenuItems =[NSMutableArray arrayWithArray:menuItems];
+    if ( NOShareInteract ) {
+        [realMenuItems removeObjectAtIndex:realMenuItems.count - 1];
+    }
+    
+    CGRect frame = CGRectMake(195, UI_IOS_WINDOW_HEIGHT - 20, 30, 62.0);
+    [qa_ChoiceList showMenuInView:self.navigationController.view
+                         fromRect:frame
+                        menuItems:[NSArray arrayWithArray:realMenuItems]
+                        transform:self.view.transform
+     ];
+}
+
+
+	// Implement viewDidLoad to do additional setup after loading the view, typically from a nib.
+- (void)viewDidLoad {
+    [super viewDidLoad];
+
+    MLPlayerAppDelegate *appdelegate = (MLPlayerAppDelegate*)[UIApplication sharedApplication].delegate;
+    appdelegate.playerController = self;
+    
+	if (contentView==nil) {
+		contentView = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"alertpop.png"]];
+		contentView.frame = CGRectMake(UI_IOS_WINDOW_WIDTH+35, 28, 120, 45);
+	}
+
+    m_pBrowserItem.Refresh();
+    israted=m_pBrowserItem.bIsRated;
+    
+    if (!m_pContenthandler) {
+        m_pContenthandler = new CMContenthandler;
+    }
+			
+	if (myFavoriteBtn == nil) {
+		myFavoriteBtn = [UIButton buttonWithType:UIButtonTypeCustom];
+		myFavoriteBtn.frame=CGRectMake(UI_IOS_WINDOW_WIDTH+35, 28, 60, 45);
+		[myFavoriteBtn addTarget:self action:@selector(MyFavoriteFun) forControlEvents:UIControlEventTouchUpInside];
+		myFavoriteBtn.backgroundColor = [UIColor clearColor];
+	}	
+	
+	if (myCommentBtn == nil) {
+		myCommentBtn = [UIButton buttonWithType:UIButtonTypeCustom];
+		myCommentBtn.frame=CGRectMake(UI_IOS_WINDOW_WIDTH+35+61, 28, 60, 45);
+		myCommentBtn.backgroundColor = [UIColor clearColor];
+		[myCommentBtn addTarget:self action:@selector(MyCommentFun) forControlEvents:UIControlEventTouchUpInside];
+	}
+			
+	[self.view addSubview:contentView];			
+	[self.view addSubview:myFavoriteBtn];
+	[self.view addSubview:myCommentBtn];
+	
+	[contentView setHidden:YES];
+	[myFavoriteBtn setHidden:YES];
+	[myCommentBtn setHidden:YES];	
+	
+    playBtnBG = [UIImage imageNamed:@"player_play_btn"];
+    pauseBtnBG = [UIImage imageNamed:@"player_pause_btn"];
+    fullBtnBG = [UIImage imageNamed:@"fullscreen"];
+    normalBtnBG = [UIImage imageNamed:@"defaultsize"];
+	
+    [self.onbackItem setBackgroundImage:[self imageWithColor:UIColorMakeRGBA(113, 116, 125, 0.0)] forState:UIControlStateNormal barMetrics:UIBarMetricsDefault];
+    [self.menuBtn setBackgroundImage:[self imageWithColor:UIColorMakeRGBA(113, 116, 125, 0.0)] forState:UIControlStateNormal barMetrics:UIBarMetricsDefault];
+    
+	CGRect movieFrame;
+
+	if(SETTING.GetPlayMode() ==1 ){
+		movieFrame.size.width = 480;//设置按钮坐标及大小
+		movieFrame.size.height = 320;	
+		
+		m_bFullScreen = TRUE;	
+	
+		controlBar.hidden = YES;
+		titleBar.hidden = YES;
+        audioContolBar.hidden = YES;
+
+        
+		istrue = NO;
+		
+	}else {
+		movieFrame.size.width = 320;//设置按钮坐标及大小
+		movieFrame.size.height = 240;
+		audioContolBar.hidden = NO;
+		titleBar.hidden = NO;
+		m_bFullScreen = FALSE;	
+	}
+
+	
+    m_bMute = FALSE;
+	m_nOldPlayPos = 0;
+	
+	progressSlider.minimumValue = 0.0;	
+	progressSlider.value = 0.0;
+	titleItem.title = self.title;
+	
+	m_listener = new CMPlayerListener(BridgeObjectToC(self));
+	m_playUtil = new CMPlayerUtility(m_listener);
+	m_playUtil->Init();
+	
+	
+	[self onFullScreen];
+	m_bMute = FALSE;
+	m_playUtil->SetVolPer(100);
+	m_nVol = m_playUtil->GetVolume();
+	
+	if (m_sUrl != NULL) {
+		m_playUtil->Stop();
+		m_playUtil->Close();
+        if( strlen(m_pBrowserItem.sID) > 0)
+            m_playUtil->OpenUrl(CMString([m_sUrl UTF8String]), m_nMode,m_pBrowserItem.sID);
+        else
+            m_playUtil->OpenUrl(CMString([m_sUrl UTF8String]), m_nMode);
+	}
+    
+    if (bIsHiddenList) {
+        self.titleItem.rightBarButtonItem = nil;
+    }
+	
+    self.finishPlayView.backgroundColor = UIColorMakeRGBA(113, 116, 125, 0.5);
+    
+    [self.titleBar setBackgroundImage:[CMImage imageWithColor:UIColorMakeRGBA(113, 116, 125, 0.8)] forBarMetrics:UIBarMetricsDefault];
+    [self.controlBar setBackgroundImage:[CMImage imageWithColor:UIColorMakeRGBA(113, 116, 125, 0.8)] forToolbarPosition:UIBarPositionAny barMetrics:UIBarMetricsDefault];
+    [self.titleBar setTintColor:[UIColor whiteColor]];
+    [self.controlBar setTintColor:[UIColor whiteColor]];
+    
+    UIImage *stetchLeftTrack= [UIImage imageNamed:@"player_progressbar_yellow_bg"];
+    UIImage *stetchRightTrack = [UIImage imageNamed:@"player_progressbar_black_bg"];
+    UIImage *thumbImage = [UIImage imageNamed:@"player_progress_cursor"];
+    
+    [progressSlider setMinimumTrackImage:stetchLeftTrack forState:UIControlStateNormal];
+    [progressSlider setMaximumTrackImage:stetchRightTrack forState:UIControlStateNormal];
+    [progressSlider setThumbImage:thumbImage forState:UIControlStateHighlighted];
+    [progressSlider setThumbImage:thumbImage forState:UIControlStateNormal];
+    [progressSlider setThumbImage:thumbImage forState:UIControlStateDisabled];
+    
+    
+    audioContolBar = [[UIToolbar alloc] initWithFrame:CGRectMake(UI_IOS_WINDOW_HEIGHT - 40, 85, 30, 150.0f) ];
+    audioContolBar.hidden = YES;
+    audioContolBar.translucent = YES;
+    audioContolBar.layer.masksToBounds = YES;
+    audioContolBar.layer.cornerRadius = 2.f;
+    [audioContolBar setBackgroundImage:[CMImage imageWithColor:UIColorMakeRGBA(113, 116, 125, 0.8)] forToolbarPosition:UIBarPositionAny barMetrics:UIBarMetricsDefault];
+    audioContolBar.barStyle = UIBarStyleBlackTranslucent;
+    
+    voiceImageView = [[UIImageView alloc]initWithFrame:CGRectMake(2.5, 120, 25, 20)];
+    voiceImageView.image = [UIImage imageNamed:@"player_voice_off"];
+    
+    audioSlider = [[UISlider alloc]initWithFrame:CGRectMake(-36, 45, 100, 30)];
+    [audioSlider addTarget:self action:@selector(audioSliderValueChanged:) forControlEvents:UIControlEventValueChanged];
+    audioSlider.transform =  CGAffineTransformMakeRotation( M_PI * 1.5 );
+    audioSlider.maximumValue = 1;
+    audioSlider.minimumValue = 0;
+    audioSlider.value = [MPMusicPlayerController applicationMusicPlayer].volume;
+    [self updateVoiceImage:audioSlider.value];
+    
+    [audioSlider setMinimumTrackImage:stetchLeftTrack forState:UIControlStateNormal];
+    [audioSlider setMaximumTrackImage:stetchRightTrack forState:UIControlStateNormal];
+    
+    UIImage *angleImage = [CMImage imageWithColor:UIColorMakeRGBA(113, 120, 125, .0f)];
+    [audioSlider setThumbImage:angleImage forState:UIControlStateHighlighted];
+    [audioSlider setThumbImage:angleImage forState:UIControlStateNormal];
+    [audioSlider setThumbImage:angleImage forState:UIControlStateDisabled];
+    
+    
+    [audioContolBar addSubview:voiceImageView];
+    [audioContolBar addSubview:audioSlider];
+    [self.view addSubview:audioContolBar];
+    
+	controlBar.hidden = YES;
+	
+	[self.view addSubview:controlBar];
+    
+    [self performSelectorInBackground:@selector(sdl_thread) withObject:nil];
+    
+   
+}
+
+- (void)audioSliderValueChanged:(UISlider *)sender{
+    
+    float volumeValue = sender.value;
+    
+    [[MPMusicPlayerController applicationMusicPlayer] setVolume:volumeValue];
+    
+    [self updateVoiceImage:volumeValue];
+    
+}
+
+- (void) updateVoiceImage:(float)volumeValue{
+    
+    UIImage *volumeImage ;
+    if ( volumeValue == 0 ) {
+        volumeImage = [UIImage imageNamed:@"player_voice_off"];
+    }else if ( volumeValue > 0 && volumeValue <= 0.5){
+        volumeImage = [UIImage imageNamed:@"player_voice_min"];
+    }else if ( volumeValue > 0.5 && volumeValue < 1){
+        volumeImage = [UIImage imageNamed:@"player_voice_med"];
+    }else if ( volumeValue == 1){
+        volumeImage = [UIImage imageNamed:@"player_voice_max"];
+        
+    }
+    voiceImageView.image = volumeImage;
+}
+
+- (void) sdl_thread {
+    printf("sdl_thread start \n");
+    SDL_iPhoneSetEventPump(SDL_TRUE);
+    SDL_main(NULL, NULL);
+    SDL_iPhoneSetEventPump(SDL_FALSE);
+    printf("sdl_thread end \n");
+}
+
+- (void)interupt:(NSNotification*)notification {
+//    printf("interupt\n");
+    
+    NSNumber *interruptionType = [[notification userInfo] objectForKey:AVAudioSessionInterruptionTypeKey];
+    NSNumber *interruptionOption = [[notification userInfo] objectForKey:AVAudioSessionInterruptionOptionKey];
+    
+    switch (interruptionType.unsignedIntegerValue) {
+        case AVAudioSessionInterruptionTypeBegan:{
+            // • Audio has stopped, already inactive
+            // • Change state of UI, etc., to reflect non-playing state
+//            printf("AVAudioSessionInterruptionTypeBegan\n");
+            if (m_playUtil)
+                m_playUtil->InterruptStart();
+            NSError* error = [[NSError alloc] init];
+            AVAudioSession* paas = [AVAudioSession sharedInstance];
+            [paas setActive: NO error: &error];
+        } break;
+        case AVAudioSessionInterruptionTypeEnded:{
+            // • Make session active
+            // • Update user interface
+            // • AVAudioSessionInterruptionOptionShouldResume option
+            NSError* error = [[NSError alloc] init];
+            AVAudioSession* paas = [AVAudioSession sharedInstance];
+            [paas setActive: YES error: &error];
+            if (m_playUtil)
+                m_playUtil->InterruptEnd();
+            if (interruptionOption.unsignedIntegerValue == AVAudioSessionInterruptionOptionShouldResume) {
+                // Here you should continue playback.
+//                printf("AVAudioSessionInterruptionOptionShouldResume\n");
+                //                [[UIApplication sharedApplication] beginReceivingRemoteControlEvents];
+            }
+//            printf("AVAudioSessionInterruptionTypeEnded\n");
+        } break;
+        default:
+            break;
+    }
+}
+
+- (void) viewWillAppear:(BOOL)animated {
+	[super viewWillAppear:animated];
+	[[UIApplication sharedApplication] setStatusBarHidden:YES withAnimation:UIStatusBarAnimationNone];
+	[self.navigationController setNavigationBarHidden:YES animated:NO];
+	
+	[self setOrientationFrom:UIInterfaceOrientationPortrait To:UIInterfaceOrientationLandscapeRight];
+    
+    //强制横屏（慎用 ） 方法2
+//    if ([[UIDevice currentDevice] respondsToSelector:@selector(setOrientation:)]) {
+//        [[UIDevice currentDevice] performSelector:@selector(setOrientation:)
+//                                       withObject:(id)UIInterfaceOrientationLandscapeRight];
+//    }
+    [UIApplication sharedApplication].idleTimerDisabled = YES;
+
+    
+	if (m_playUtil)
+	{
+      //  m_playUtil->SetManuPause(FALSE);
+		//m_playUtil->Play();
+      //  [self startTimer];
+        [self onPlay];
+	}
+    
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(onPause) name:@"CMPlayPause" object:nil];
+    
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(onPlay) name:@"CMPlayStartTimer" object:nil];
+    
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(interupt:)
+                                                 name:AVAudioSessionInterruptionNotification
+                                               object:nil];
+	
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(volumeChanged:)
+                                                 name:@"AVSystemController_SystemVolumeDidChangeNotification"
+                                               object:nil];
+    
+    [self rotateImageView:self.progressImageView];
+    self.progressLabel.text = self.title ;
+    if (!self.title || [self.title isEqualToString:@""]) {
+        self.progressLabel.text = I(@"即将播放");
+    }
+
+}
+
+//圆形loading圈
+-(void)rotateImageView:(UIImageView *)imgView
+{
+    [UIView animateWithDuration:0.1 delay:0 options:UIViewAnimationOptionCurveLinear animations:^{
+        [imgView setTransform:CGAffineTransformRotate(imgView.transform, 12 * (M_PI/180))];
+    }completion:^(BOOL finished){
+        if (finished) {
+            [self rotateImageView:imgView];
+        }
+    }];
+}
+
+- (void)volumeChanged:(NSNotification *)notification
+{
+    float volumeValue =
+    [[[notification userInfo]
+      objectForKey:@"AVSystemController_AudioVolumeNotificationParameter"]
+     floatValue];
+    
+    [UIView animateWithDuration:0.3 animations:^{
+        audioSlider.value = volumeValue;
+    }];
+    
+    [self updateVoiceImage:volumeValue];
+    
+}
+
+- (void) viewWillDisappear:(BOOL)animated {
+	[super viewWillDisappear:animated];
+	
+	[UIApplication sharedApplication].idleTimerDisabled = NO;
+	
+	if (m_playUtil) {
+//        m_playUtil->SetManuPause(TRUE);
+//		m_playUtil->Pause();
+//        
+//        //离开播放页面停止定时器
+//        [self stopTimer];
+        [self onPause];
+	}
+    
+    [[NSNotificationCenter defaultCenter] removeObserver:self name:@"CMPlayPause" object:nil];
+    [[NSNotificationCenter defaultCenter] removeObserver:self name:@"CMPlayStartTimer" object:nil];
+    [[NSNotificationCenter defaultCenter] removeObserver:self
+                                                    name:AVAudioSessionInterruptionNotification
+                                                  object:nil];
+    
+    [[NSNotificationCenter defaultCenter] removeObserver:self name:@"AVSystemController_SystemVolumeDidChangeNotification" object:nil];
+
+
+	
+	[self setOrientationFrom:UIInterfaceOrientationLandscapeRight To:UIInterfaceOrientationPortrait];
+	
+	[[UIApplication sharedApplication] setStatusBarHidden:NO withAnimation:UIStatusBarAnimationNone];
+	[self.navigationController setNavigationBarHidden:NO animated:NO];
+    
+    if ([self.navigationController.viewControllers indexOfObject:self] == NSNotFound) {
+        if (SDL_GetEventState(SDL_QUIT) == SDL_ENABLE) {
+            SDL_Event event;
+            event.type = SDL_QUIT;
+            SDL_PushEvent(&event);
+        }
+        
+        if (SDL_GetEventState(SDL_APP_TERMINATING) == SDL_ENABLE) {
+            SDL_Event event;
+            event.type = SDL_APP_TERMINATING;
+            SDL_PushEvent(&event);
+        }
+    }
+}
+
+
+-(void)initSetting
+{					
+	if(!istrue)
+	{
+		[contentView setHidden:NO];
+		[myFavoriteBtn setHidden:NO];
+		[myCommentBtn setHidden:NO];
+		
+	}else {
+
+		[contentView setHidden:YES];
+		[myFavoriteBtn setHidden:YES];
+		[myCommentBtn setHidden:YES];
+		
+	}
+	istrue = !istrue;
+}
+
+-(void)MyFavoriteFun
+{
+	ispause = TRUE;
+	
+	//NSLog(@"MyFavoriteFun");
+	[contentView setHidden:YES];
+	[myFavoriteBtn setHidden:YES];
+	[myCommentBtn setHidden:YES];
+	
+
+	//返回值：0失败，1成功，2已收藏
+	int returnvalue = CMFavorites::GetInstance()->AddFavorite(m_pBrowserItem);
+	
+	if (returnvalue == 0) {
+		[self showAlertView:I(@"收藏失败")];
+	}else if (returnvalue == 1) {
+		[self showAlertView:I(@"收藏成功")];
+	} else {
+		[self showAlertView:I(@"已收藏")];
+		
+	} 	
+}
+
+- (UIImage*) imageWithColor: (UIColor*) color
+{
+    CGRect rect=CGRectMake(0.0f, 0.0f, 1.0f, 1.0f);
+    UIGraphicsBeginImageContext(rect.size);
+    CGContextRef context = UIGraphicsGetCurrentContext();
+    CGContextSetFillColorWithColor(context, [color CGColor]);
+    CGContextFillRect(context, rect);
+    UIImage*theImage = UIGraphicsGetImageFromCurrentImageContext();
+    UIGraphicsEndImageContext();
+    return theImage;
+}
+
+#pragma mark - AlertView
+- (void)showAlertView:(NSString *)string{
+    UILabel* label = [[UILabel alloc]initWithFrame:CGRectMake(0, 5, 120, 20)];
+    label.textAlignment=UITextAlignmentCenter;
+    label.text = string;
+    label.font = [UIFont systemFontOfSize:14];
+    label.textColor = [UIColor whiteColor];
+    label.backgroundColor = [UIColor clearColor];
+    UIImage *theImage = [UIImage imageNamed:@"textHintBG.png"];
+    theImage = [theImage resizableImageWithCapInsets:UIEdgeInsetsMake(10, 10, 10, 10)];
+    
+    CGRect frame = CGRectMake((UI_IOS_WINDOW_HEIGHT - 120)/2.0, (UI_IOS_WINDOW_WIDTH - 40)/2.0, 120, 30);
+    UIImageView *bg = [[UIImageView alloc]initWithFrame:frame];
+    bg.alpha = 0.0;
+    bg.hidden = YES;
+    [bg setImage:theImage];
+    [bg addSubview:label];
+    [self.view addSubview:bg];
+    CMRELEASE(label);
+    
+    [UIView animateWithDuration:0.5 animations:^(void){
+        bg.alpha = 1.0;
+        bg.hidden = NO;
+    } completion:^(BOOL f1){
+        [UIView animateWithDuration:0.5 animations:^(void){
+            bg.alpha = 0.0;
+            bg.hidden = YES;
+        } completion:^(BOOL f2){
+            ;
+        }];
+    }];
+    CMRELEASE(bg);
+}
+
+
+-(void)gotoLike
+{
+    if(israted)
+        return;
+    
+    israted = YES;
+    
+   	ispause = TRUE;
+
+    
+    if(CMGlobal::TheOne().IsOffline())
+        return;
+    
+    
+    if(!m_pContenthandler)
+        return;
+    if (!m_pRatingListener) {
+		m_pRatingListener = new CMPlayRatingListener();
+    }
+    
+    
+    m_pContenthandler->SetListener(NULL,m_pRatingListener);
+    m_pContenthandler->SetUserData(BridgeObjectToC(self));
+
+    
+    
+    if(m_pContenthandler->IsRunning())
+        return;
+
+    ////返回值：0失败，1成功，2
+    if(m_pBrowserItem.nModel==1)
+        m_pBrowserItem.RatingCourseinfo();
+    else
+        m_pBrowserItem.Rating();
+
+//    m_pContenthandler->Rating(m_pBrowserItem.sID);
+
+}
+
+-(void)gotoShare
+{
+	CMInteractViewController *shareController = [[CMInteractViewController alloc]initWithTBrowserItem:&m_pBrowserItem];
+    if(!__iOS6){
+        shareController.isPlayAndNewsPush = YES;
+        [self.navigationController pushViewController:shareController animated:YES];
+    }
+    else{
+        UINavigationController *navigationController = [[UINavigationController alloc] initWithRootViewController:shareController];
+        [self presentModalViewController:navigationController animated:YES];
+        CMRELEASE(navigationController);
+    }
+    CMRELEASE(shareController);
+}
+
+-(void)MyCommentFun
+{
+	ispause = TRUE;
+	
+	[contentView setHidden:YES];
+	[myFavoriteBtn setHidden:YES];
+	[myCommentBtn setHidden:YES];
+	istrue = !istrue;
+	
+	
+	
+	if(m_playUtil)
+	{
+		m_playUtil->Pause();
+	}
+	NSString* m_sFlag = [NSString stringWithUTF8String:m_pBrowserItem.sFlag];
+				
+	CMInfoCommentControl* InfoCommentControl = [[CMInfoCommentControl alloc] init];
+	[InfoCommentControl setCourseID:m_pBrowserItem.sID type:m_sFlag];
+	InfoCommentControl.title = [NSString stringWithUTF8String:m_pBrowserItem.sTitle];
+	InfoCommentControl.modalTransitionStyle = UIModalTransitionStyleFlipHorizontal;
+	InfoCommentControl.navigationController.navigationBarHidden = NO;
+	InfoCommentControl.tabBarController.tabBar.hidden = YES;
+	InfoCommentControl.hidesBottomBarWhenPushed = YES;
+    NSUserDefaults *ud = [NSUserDefaults standardUserDefaults];
+    [ud setObject:@"1" forKey:@"CommentReplyAdd"];
+
+	InfoCommentControl.view.backgroundColor = [UIColor clearColor];
+	[self.navigationController pushViewController:InfoCommentControl animated:YES];
+    CMRELEASE(InfoCommentControl);
+	
+}
+
+
+- (void)didReceiveMemoryWarning {
+		// Releases the view if it doesn't have a superview.
+    [super didReceiveMemoryWarning];
+    
+		// Release any cached data, images, etc. that aren't in use.
+}
+-(void)onAppFocus:(BOOL)isForeground
+{
+    if(isForeground)
+    {
+        if(m_playUtil)
+            m_playUtil->Play();
+    }
+    else
+    {
+        if(m_playUtil)
+            m_playUtil->Pause();
+    }
+}
+
+- (void)viewDidUnload {
+//    [self setMenuBtn:nil];
+	[super viewDidUnload];
+		// Release any retained subviews of the main view.
+		// e.g. self.myOutlet = nil;
+	
+}
+
+- (void)touchesEnded:(NSSet *)touches withEvent:(UIEvent *)event {
+	if (controlBar.hidden) {
+		controlBar.hidden = NO;
+		titleBar.hidden = NO;
+        audioContolBar.hidden = NO;
+//        [self updateDisplayTimer];
+//        [self startTimer];
+	}
+	else {
+		controlBar.hidden = YES;
+		titleBar.hidden = YES;
+        audioContolBar.hidden = YES;
+
+		[contentView setHidden:YES];
+		istrue = NO;
+//        [self stopTimer];
+	}
+}
+
+- (void)dealloc {
+    
+	if (m_playUtil) {
+		m_playUtil->Stop();
+		m_playUtil->Close();
+		SAFEDELETE(m_playUtil);
+    }
+	if (m_listener) {
+		SAFEDELETE(m_listener);
+	}
+    
+    MLPlayerAppDelegate *appdelegate = (MLPlayerAppDelegate*)[UIApplication sharedApplication].delegate;
+    appdelegate.playerController = nil;
+	   
+	CMRELEASE(contentView);
+    SAFEDELETE(m_pRatingListener);
+    SAFEDELETE(m_pContenthandler);
+    
+
+
+    CMRELEASE(commentUrl);
+    CMRELEASE(progressSlider);
+    CMRELEASE(movieView);
+    CMRELEASE(titleBar);
+    CMRELEASE(titleItem);
+    CMRELEASE(controlBar);
+    CMRELEASE(fullBut);
+    CMRELEASE(currTime);
+    CMRELEASE(totaTime);
+    
+    CMRELEASE(_progressImageView);
+    CMRELEASE(_progressLabel);
+    CMRELEASE(_startPlayView);
+    CMRELEASE(_finishPlayView);
+    CMRELEASE(playBut);
+    
+    CMRELEASE(audioContolBar);
+    CMRELEASE(audioSlider);
+    CMRELEASE(voiceImageView);
+    
+# if ! __has_feature(objc_arc)
+[_menuBtn release];
+	[super dealloc];
+# endif
+}
+
+- (void)startPlay:(NSString *)url
+{
+    CMGeneral general;
+    self.m_sUrl = [NSString stringWithUTF8String:general.FormatUrlBySID([url UTF8String])];
+    m_nMode = EMode_3mv;
+    bIsHiddenList = YES;
+}
+
+-(void) showPause {
+	[playBut setImage:[UIImage imageNamed:@"player_pause_btn"]];
+}
+
+-(void) showPlay {
+	[playBut setImage:[UIImage imageNamed:@"player_play_btn"]];
+}
+
+-(void)updateViewForPlayerInfo
+{
+	int duration = m_playUtil->Duration() / 1000;
+	[totaTime setTitle:[NSString stringWithFormat:@"%d:%02d", duration / 60, duration % 60, nil]];
+	progressSlider.maximumValue = duration;
+}
+
+//开启定时器
+-(void)startTimer{
+    if (playerTimer) {
+        [playerTimer invalidate];
+        playerTimer = nil;
+    }
+    playerTimer = [[NSTimer alloc] initWithFireDate:[NSDate dateWithTimeIntervalSinceNow:0.2] interval:1.0f target:self selector:@selector(updateDisplayTimer) userInfo:nil repeats:YES];
+    [[NSRunLoop currentRunLoop] addTimer:playerTimer forMode:NSDefaultRunLoopMode];
+   // playerTimer = [NSTimer scheduledTimerWithTimeInterval:1.0f target:self selector:@selector(updateDisplayTimer) userInfo:nil repeats:YES];
+}
+
+//刷新时间
+-(void)updateDisplayTimer{
+    [self setPlayPos:m_playUtil->GetPosition()];
+}
+
+//关闭定时器
+-(void)stopTimer{
+    if (playerTimer) {
+        [playerTimer setFireDate:[NSDate date]];
+        [playerTimer invalidate];
+        playerTimer = nil;
+    }
+}
+
+-(void)setPlayPos:(int)pos {
+	if (pos == m_nOldPlayPos) return;
+	m_nOldPlayPos = pos;
+	int duration = pos / 1000;
+    int min = duration / 60 > 0 ? duration / 60 : 0;
+	[currTime setTitle:[NSString stringWithFormat:@"%d:%02d", min, duration % 60, nil]];
+    
+	progressSlider.value = duration;
+}
+
+-(IBAction)onPlayPause{
+	if (m_playUtil->IsPlaying()) {
+        m_playUtil->SetManuPause(TRUE);
+		m_playUtil->Pause();
+        progressSlider.enabled = NO;
+        [self stopTimer];
+	}
+	else {
+        m_playUtil->SetManuPause(FALSE);
+		m_playUtil->Play();
+        progressSlider.enabled = YES;
+        [self startTimer];
+	}
+}
+
+
+- (void)onPause{
+    if (SDL_GetEventState(SDL_APP_WILLENTERBACKGROUND) == SDL_ENABLE) {
+        SDL_Event event;
+        event.type = SDL_APP_WILLENTERBACKGROUND;
+        SDL_PushEvent(&event);
+        SDL_PumpEvents();
+        
+        do {
+            NSLog(@"appdelegate onpause");
+            usleep(20000);
+          //  [NSThread sleepForTimeInterval:0.3];
+        } while (SDL_PeepEvents(NULL, 1, SDL_PEEKEVENT, SDL_APP_WILLENTERBACKGROUND, SDL_APP_WILLENTERBACKGROUND) > 0);
+        
+        
+    }
+    [self stopTimer];
+}
+
+- (void)onPlay{
+    if (SDL_GetEventState(SDL_APP_DIDENTERFOREGROUND) == SDL_ENABLE) {
+        SDL_Event event;
+        event.type = SDL_APP_DIDENTERFOREGROUND;
+        SDL_PushEvent(&event);
+    }
+
+    [self startTimer];
+}
+
+-(IBAction)onBack{
+	ispause = FALSE;
+	[self.navigationController popViewControllerAnimated:TRUE];
+}
+
+-(IBAction)onMute{
+	if (m_bMute) {
+		m_bMute = FALSE;
+		m_playUtil->SetVolume(m_nVol);
+	}
+	else {
+		m_bMute = TRUE;
+		m_nVol = m_playUtil->GetVolume();
+		m_playUtil->SetVolume(0);	
+	}
+}
+
+	//-(IBAction)onForward{}
+	//
+	//-(IBAction)onBackward{}
+
+-(void)onProgressChange:(UISlider*)sender{
+    float pos = [sender value];
+    [self setPlayPos:pos * 1000];
+}
+
+//拖动开始
+- (void)scrubbingDidBegin:(UISlider*)sender{
+    [self stopTimer];
+    CM_ERR("scrubbingDidBegin");
+}
+
+//拖动结束
+- (void)scrubbingDidEnd:(UISlider*)sender{
+    if(m_playUtil && m_playUtil->IsPlaying())
+    {
+        float pos = [sender value];
+        m_playUtil->SetPosition(pos*1000);
+    }
+    [self startTimer];
+    CM_ERR("scrubbingDidEnd");
+}
+
+-(IBAction)onFullScreen{
+	
+		
+	if (m_bFullScreen) {
+		
+		m_movieRect = CGRectMake(0, 0, UI_IOS_WINDOW_HEIGHT, UI_IOS_WINDOW_WIDTH);//[[self view] frame];
+		
+	//	[self.movieView setFrame:m_movieRect];
+		
+		m_playUtil->SetDrawSize(m_movieRect.size.width, m_movieRect.size.height);
+		[fullBut setImage:fullBtnBG];
+		m_bFullScreen = FALSE;
+	}
+	else {					
+		
+		m_movieRect = CGRectMake((UI_IOS_WINDOW_HEIGHT-320)/2, (UI_IOS_WINDOW_WIDTH-240)/2, 320, 240);//[[self view] frame];
+						
+		m_playUtil->SetDrawSize(m_movieRect.size.width, m_movieRect.size.height);
+		[fullBut setImage:normalBtnBG];
+		m_bFullScreen = TRUE;
+	}
+
+	[self.movieView setFrame:m_movieRect];
+		
+}
+
+-(BOOL)setItem:(TBrowserItem&)item
+{
+    if (&item == nil)
+    {
+        return NO;
+    }
+    
+	m_pBrowserItem = item;
+    
+    CMGeneral general;
+    
+    NSString* sType = [NSString stringWithUTF8String:item.sType];
+    
+    self.m_sUrl =[NSString stringWithUTF8String:general.FormatUrlBySID(((TCoursewareItem&)item).sUrl)];
+    
+     self.m_sLocalFilePath =[NSString stringWithUTF8String:((TCoursewareItem&)item).sLocalFilePath];
+    
+	titleItem.title = [NSString stringWithUTF8String:item.sTitle];
+    
+	if([sType isEqualToString:@"video/3mv"] || [sType isEqualToString:@"video/mp4"])
+	{
+		m_nMode =EMode_3mv;
+	}
+	else if ([sType isEqualToString:@"audio/3ma"])
+	{
+		m_nMode = EMode_3ma;
+	}
+	else if ([sType isEqualToString:@"audio/aac"])
+	{
+		m_nMode = EMode_aac;
+	}
+    else
+        
+    {
+        return NO;
+    }
+    
+    
+    israted =item.bIsRated;
+    return YES;
+}
+
+-(void)onpre
+{
+	if(m_playUtil && m_playUtil->IsPlaying())
+	{
+		m_playUtil->SetPosition(m_playUtil->GetPosition()-30000);
+	}
+	
+}
+-(void)onnext
+{
+	if(m_playUtil && m_playUtil->IsPlaying())
+	{
+        int nDuration = m_playUtil->Duration();
+        int nPosition = m_playUtil->GetPosition() + 30000;
+        int nSpeedTime = nDuration > nPosition ? nPosition : nDuration;
+		m_playUtil->SetPosition(nSpeedTime);
+	}
+	
+}
+
+- (void)hideWaitingPlayVC{
+    [UIView animateWithDuration:0.3 animations:^{
+        
+        self.startPlayView.alpha = 0.f;
+    } completion:^(BOOL finished) {
+        self.startPlayView.hidden = YES;
+    }];
+}
+
+- (void)showFinishPlayVC{
+    self.finishPlayView.hidden = NO;
+    self.finishPlayView.alpha = 0.f;
+    [UIView animateWithDuration:0.3 animations:^{
+        
+        self.finishPlayView.alpha = 1.f;
+    } completion:^(BOOL finished) {
+    }];
+}
+
+- (void)hideFinishPlayVC{
+    [UIView animateWithDuration:0.3 animations:^{
+        
+        self.finishPlayView.alpha = 0.f;
+    } completion:^(BOOL finished) {
+        self.finishPlayView.hidden = YES;
+    }];
+}
+
+- (IBAction)replayButtonPressed:(UIButton *)sender
+{
+    [self hideFinishPlayVC];
+    
+    [self onPlayPause];
+}
+@end
+
+CMPlayerListener::CMPlayerListener(void* control){
+	m_control = control;
+}
+
+void CMPlayerListener::StateChange(void* UserData, INT32 nNew, INT32 nOld){
+    printf("status old %d, new %d \n", nOld, nNew);
+    dispatch_async(dispatch_get_main_queue(), ^{
+        CMPlayerControl* pControl = (__bridge CMPlayerControl*)m_control;
+        if (pControl == NULL || pControl->m_playUtil == NULL)
+            return;
+        
+        //视频seeking 的时候，禁止其他拖拽操作，需等待完成
+        if (nNew == ESeeking) {
+            [pControl stopTimer];
+            pControl.progressSlider.enabled = NO;
+        }
+        else if (nOld == ESeeking){
+            [pControl startTimer];
+            pControl.progressSlider.enabled = YES;
+        }
+        
+        if (nNew == EPlaying) {
+            if (nOld == EOpening) {
+                [pControl updateViewForPlayerInfo];
+                [pControl startTimer];
+            }
+            [pControl showPause];
+            
+            [pControl hideWaitingPlayVC];
+
+        }
+        else if (nNew == EPaused || nNew == EStopped) {
+            [pControl showPlay];
+            if(nNew == EStopped)
+            {
+                [pControl stopTimer];
+                //播放结束，时间进度不置0
+//                pControl.currTime.text = @"0:00";
+//                pControl.progressSlider.value = 0.0;
+                pControl.progressSlider.enabled = NO;
+                
+                [pControl showFinishPlayVC];
+            }
+        }
+    
+    });
+}
+
+void CMPlayerListener::ProgressChange(void* UserData, INT32 nBufPer, INT32 nPlayPos){
+    dispatch_async(dispatch_get_main_queue(), ^{
+        CMPlayerControl* pControl = (__bridge CMPlayerControl*)m_control;
+        
+        if (pControl == NULL || pControl->m_playUtil == NULL)
+            return;
+        
+        [pControl setPlayPos:nPlayPos];
+    });
+}
+
+void CMPlayerListener::OnAllCompleted(void* UserData){
+}
+
+void CMPlayerListener::OnError(void* UserData, INT32 nErrorCode){
+	CMPlayerControl* pControl = (__bridge CMPlayerControl*)m_control;
+	if (pControl && pControl->m_playUtil)
+		pControl->m_playUtil->Stop();
+    
+    
+    [tool ShowAlert:I(@"视频文件出错，无法播放！")];
+}
+
+void CMPlayerListener::VideoDraw(UINT8* data, INT32 width, INT32 height)
+{
+	CMPlayerControl* pControl = (__bridge CMPlayerControl*)m_control;
+	if (pControl.movieView)
+	{
+			//		CGDataProviderRef provider = CGDataProviderCreateWithData(NULL, data, width * height * 2, NULL);
+			//		CGImageRef cgi = CGImageCreate (width, height, 5, 16, 2 * width, 
+			//					   CGColorSpaceCreateDeviceRGB(),
+			//					   kCGBitmapByteOrder16Little,
+			//					   provider,
+			//					   NULL,
+			//					   NO,
+			//					   kCGRenderingIntentDefault);
+			//		UIImage *image = [[UIImage alloc] initWithCGImage:cgi];
+		
+			//		CGSize itemSize = CGSizeMake(width, height);
+			//		UIGraphicsBeginImageContext(itemSize);
+			//		CGRect imageRect = CGRectMake(0.0, 0.0, itemSize.width, itemSize.height);
+			//		[image drawInRect:imageRect];
+			//		self.appRecord.appIcon = UIGraphicsGetImageFromCurrentImageContext();
+			//		UIGraphicsEndImageContext();
+		
+			//		if (pControl.movieView.image == nil)
+			//		{
+			//			CMString sFilePath = CMPath(CMPath::CONF_PATH).String()+L"a.jpg";
+			//			[UIImageJPEGRepresentation(image, 1) writeToFile:[NSString stringWithUTF8String:(const char*)sFilePath] atomically:TRUE ];
+			//			[pControl.movieView performSelectorOnMainThread:@selector(initWithImage:) withObject:image waitUntilDone:TRUE];
+			//		}
+			//		else
+			//		{
+			//			CMString sFilePath = CMPath(CMPath::CONF_PATH).String()+L"b.jpg";
+			//			[UIImageJPEGRepresentation(image, 1) writeToFile:[NSString stringWithUTF8String:(const char*)sFilePath] atomically:TRUE ];
+			//			pControl.movieView.image = image;
+			//		}
+			//		
+			//		[pControl.movieView performSelectorOnMainThread:@selector(setNeedsDisplay) withObject:nil waitUntilDone:TRUE];
+			//		CGImageRelease(cgi);
+			//		CGDataProviderRelease(provider);
+		
+		pControl.movieView.drawData = data;
+		pControl.movieView.drawWidth = width;
+		pControl.movieView.drawHeight = height;
+			//		[pControl.movieView performSelectorOnMainThread:@selector(drawView) withObject:nil waitUntilDone:TRUE];
+		[pControl.movieView drawView];
+	}
+}
+
+void CMPlayerListener::NotifyStop()
+{
+	
+}

@@ -1,0 +1,442 @@
+/*
+ * cmsearchcourse.cpp
+ *
+ *  Created on: 2013-9-23
+ *      Author: mazhen
+ */
+
+#include "stdafx.h"
+#include "cmsearchcourse.h"
+#include "cmsession.h"
+#include "tinyxml.h"
+#include "utf8ncpy.h"
+
+#define TABLE_SEARCH_CATEGORY "search_category"
+
+#define MAXSIZE 10
+struct node
+{
+	TSearchItem* key[MAXSIZE];
+	int count;
+	node()
+	{
+		count =0;
+	}
+};
+
+TSearchItem::TSearchItem()
+{
+	nSearchCount = 0;
+	bCanAddHigh = FALSE;
+	m_lstItem = new CMList<TSearchItem*>;
+}
+
+TSearchItem::~TSearchItem()
+{
+
+}
+
+int TSearchItem::ChildItemCount()
+{
+	if(!m_lstItem)
+		return 0;
+	return m_lstItem->size();
+}
+
+TSearchItem* TSearchItem::GetChildItem(int nIndex)
+{
+	if(nIndex>=0 && nIndex<ChildItemCount()){
+		TSearchItem* p =(TSearchItem*)m_lstItem->at(nIndex);
+		return p;
+	}
+	return NULL;
+}
+
+int TSearchItem::GetSearchCount() const
+{
+	return nSearchCount;
+}
+
+void TSearchItem::RadixSort()
+{
+	//获取搜索次数的最大值来确定装几次同桶
+	int max = 0;
+	for(int i =0;i<m_lstItem->size();i++){
+		TSearchItem* item = m_lstItem->at(i);
+		if(item->nSearchCount>max)
+			max = item->nSearchCount;
+	}
+	//计算桶的次数d
+	int d = 1;
+	int temp = 10;
+	while(true)
+	{
+		if(max/temp >0)
+		{
+			d++;
+			temp *= 10;
+		}else
+			break;
+	}
+
+	node head[10];//10个桶
+	int pos = 1;
+	while(d >= pos)
+	{
+		//依次把对象放入桶内
+		for(int i=0;i<m_lstItem->size();i++)
+		{
+			TSearchItem* item = m_lstItem->at(i);
+			int id = GetNumInPos(item->nSearchCount,pos);
+			head[id].key[head[id].count] = item;
+			head[id].count++;
+		}
+
+		m_lstItem->clear();
+
+		//排序
+		int num = 0;
+		for(int i = 9;i >= 0;i--)
+		{
+			if(head[i].count!=0)
+			{
+				for(int j=head[i].count-1;j>=0;j--)
+				{
+					m_lstItem->push_back(head[i].key[j]);
+					num++;
+				}
+				//清空
+				head[i].count = 0;
+			}
+		}
+
+		pos++;
+
+	}
+
+}
+
+int TSearchItem::GetNumInPos(int num , int pos)
+{
+	int temp = 1;
+	for(int i=0;i<pos - 1;i++)
+		temp *= 10;
+	return (num/temp)%10;
+}
+
+void TSearchItem::SetSearchCountSign()
+{
+	bCanAddHigh = FALSE;
+	if(nSearchCount == 0)
+		bCanAddHigh = TRUE;
+
+	nSearchCount = nSearchCount+1;
+}
+
+CMSearchCourse::CMSearchCourse()
+:CMHandler<TSearchItem*>()
+{
+	SetPaging(FALSE);
+
+	sqlite3 *db = CheckTable();
+
+	highSearchItem = new TSearchItem();
+
+	DoCreate(db);
+}
+
+CMSearchCourse::~CMSearchCourse() {
+	Clear();
+}
+
+CMSearchCourse::CMSearchCourse(const CMSearchCourse& other)
+  :CMHandler<TSearchItem*>()
+
+{
+	*this = other;
+}
+
+
+void CMSearchCourse::GetCourseKey()
+{
+	Clear();
+
+	if(!m_pSession)
+		m_pSession = new CMSession(this);
+
+	if(m_pSession->IsRunning())
+		return;
+
+	CMHandler<TSearchItem*>::Request(SERVICE_SEARCHCATEGERY, "flag=course");
+
+}
+
+void CMSearchCourse::SetUserData(void* UserData)
+{
+	m_UserData = UserData;
+}
+void CMSearchCourse::SetListener(IMUpdateDataListener* pUpdateDataListener) {
+
+	m_pListener = pUpdateDataListener;
+
+}
+
+BOOL CMSearchCourse::DoGetCacheItems(sqlite3* db){
+
+    return  TRUE;
+}
+
+BOOL CMSearchCourse::DoRefresh(TSearchItem*& obj){
+
+	BOOL ret = FALSE;
+
+	sqlite3_stmt *stmt;
+	CHAR sql[1024];
+	sql[0] = '\0';
+
+	sqlite3* db = CheckTable(TABLE_SEARCH_CATEGORY);
+	if(db == NULL)
+		return FALSE;
+
+	snprintf(sql,1024,"SELECT id,title,flag,searchcount FROM %s WHERE id = ?", TABLE_SEARCH_CATEGORY);
+
+	if(sqlite3_prepare_v2(db,sql,-1,&stmt,NULL) == SQLITE_OK)
+	{
+		BindParam(stmt, 1, obj->sID.c_str());
+		if(sqlite3_step(stmt) == SQLITE_ROW)
+		{
+			obj->nSearchCount = sqlite3_column_int(stmt, 3);
+		}
+		sqlite3_finalize(stmt);
+		ret = TRUE;
+	}else{
+		CM_ERRP("sqlite3_step %s failed.error:%s", sql, sqlite3_errmsg(db));
+	}
+
+    return  TRUE;
+}
+
+BOOL CMSearchCourse::DoUpdate(TSearchItem*  const &obj){
+	BOOL ret = FALSE;
+	sqlite3* db = CheckTable(TABLE_SEARCH_CATEGORY);
+
+	if(obj->bCanAddHigh)
+		highSearchItem->m_lstItem->push_back(obj);
+
+	highSearchItem->RadixSort();
+
+	if(db){
+		m_mutex.Lock();
+
+		CHAR sql[1024];
+		sqlite3_stmt *stmt;
+		snprintf(sql,1024,"UPDATE %s SET searchcount=? WHERE id=?",TABLE_SEARCH_CATEGORY);
+
+		if(sqlite3_prepare_v2(db, sql, -1, &stmt, NULL) == SQLITE_OK){
+			BindParam(stmt,1,obj->nSearchCount);
+			BindParam(stmt,2,obj->sID.c_str());
+
+			if(sqlite3_step(stmt) == SQLITE_DONE){
+				ret = TRUE;
+			}else{
+				CM_ERRP("exec %s failed.error:%s", sql, sqlite3_errmsg(db));
+			}
+		}else{
+			CM_ERRP("exec %s failed.error:%s", sql, sqlite3_errmsg(db));
+		}
+
+		m_mutex.UnLock();
+
+		sqlite3_finalize(stmt);
+	}
+
+    return  ret;
+}
+
+BOOL CMSearchCourse::DoCreate(sqlite3* db){
+
+	char* errorMsg;
+	char sql[1024];
+	snprintf(sql,1024,"CREATE TABLE IF NOT EXISTS %s(_id INTEGER PRIMARY KEY AUTOINCREMENT,id TEXT UNIQUE,title TEXT,flag TEXT,searchcount INTEGER)",TABLE_SEARCH_CATEGORY);
+	if(sqlite3_exec(db,sql,NULL,NULL, &errorMsg) == SQLITE_OK){
+		return TRUE;
+	}else{
+		CM_ERRP("exec %s failed.error:%s", sql, errorMsg);
+		return FALSE;
+	}
+}
+
+BOOL CMSearchCourse::DoPutItem(TiXmlElement* pItem, sqlite3* db,
+		TSearchItem*& item) {
+	const CHAR* pStr = NULL;
+
+	pStr = pItem->Attribute("id");
+	if (pStr)
+		item->sID = pStr;
+
+	pStr = pItem->Attribute("title");
+	if (pStr)
+		item->sTitle = pStr;
+    
+    pStr = pItem->Attribute("flag");
+	if (pStr)
+		item->sFlag = pStr;
+
+	sqlNotin.append("'");
+	sqlNotin.append(item->sID.c_str());
+	sqlNotin.append("'");
+	sqlNotin.append(",");
+	DoRefresh(item);
+
+	//如果搜索数量>0 加入常用搜索，上层去排序
+	if(item->nSearchCount > 0)
+	{
+		highSearchItem->m_lstItem->push_back(item);
+	}
+	CHAR sql[1024];
+	sqlite3_stmt *stmt;
+	snprintf(sql, 1024, "REPLACE INTO %s(id,title,flag,searchcount) VALUES (?,?,?,?)",TABLE_SEARCH_CATEGORY);
+
+	if(sqlite3_prepare_v2(db, sql, -1, &stmt, NULL) == SQLITE_OK){
+		BindParam(stmt, 1, item->sID.c_str());
+		BindParam(stmt, 2, item->sTitle.c_str());
+		BindParam(stmt, 3, item->sFlag.c_str());
+		BindParam(stmt, 4, item->nSearchCount);
+		if(sqlite3_step(stmt) == SQLITE_DONE)
+		{
+
+		}else{
+			CM_ERRP("exec %s failed.error:%s", sql, sqlite3_errmsg(db));
+		}
+	}else{
+		CM_ERRP("exec %s failed.error:%s", sql, sqlite3_errmsg(db));
+	}
+
+	pItem = pItem->FirstChildElement("item");
+	while(pItem){
+		TSearchItem* pChild = new TSearchItem();
+		pChild->m_sTopID = item->sID;
+
+		if(DoPutItem(pItem,db,pChild)){
+			item->m_lstItem->push_back(pChild);
+		}else{
+			SAFEDELETE(pChild);
+		}
+
+		pItem = pItem->NextSiblingElement("item");
+	}
+    return TRUE;
+
+}
+
+void CMSearchCourse::OnSessionCmd(unsigned int nCmdID,unsigned int nCode, TiXmlDocument* pDoc)
+{
+	INT32 result = TResult::EUnknownError;
+	if(nCode == MER_OK)
+	{
+		TiXmlElement *pItem = pDoc->RootElement();
+
+		INT32 nErr = -1;
+		INT32 nCmdID = 0;
+
+		pItem->QueryIntAttribute("no",&nCmdID);
+
+		pItem->QueryIntAttribute("errno", &nErr);
+		if(nErr == 0)
+		{
+			if(!pItem->NoChildren())
+			{
+				sqlite3* db = CheckTable(m_tablename);
+
+				CHAR sql[1024];
+				sql[0] = '\0';
+				char* errorMsg;
+
+				if(!m_bPaging || m_nPageNo == 1)
+				{
+					m_mutex.Lock();
+					Clear();
+					highSearchItem->m_lstItem->clear();
+					m_mutex.UnLock();
+				}
+
+				if (sqlite3_exec(db, "BEGIN TRANSACTION;", 0, 0,
+						&errorMsg) != SQLITE_OK) {
+					CM_ERRP("BEGIN TRANSACTION failed.error:%s", errorMsg);
+				}
+
+				pItem = pItem->FirstChildElement("item");
+				m_mutex.Lock();
+				sqlNotin = "(";
+
+				while(pItem)
+				{
+					TSearchItem* item = new TSearchItem();
+					if(DoPutItem(pItem,db, item))
+					{
+						m_lstItem->push_back(item);
+					}else
+					{
+						SAFEDELETE(item);
+					}
+
+					pItem = pItem->NextSiblingElement("item");
+				}
+				m_mutex.UnLock();
+				if (sqlite3_exec(db, "COMMIT TRANSACTION;", 0, 0,
+						&errorMsg) != SQLITE_OK) {
+					CM_ERRP("COMMIT TRANSACTION failed.error:%s", errorMsg);
+				}
+				sqlNotin.erase(sqlNotin.end()-1);
+				sqlNotin.append(")");
+				UpdateCache();
+
+				highSearchItem->RadixSort();
+
+				if(GetItemCount() >0)
+					result = TResult::ESuccess;
+				else
+					result = TResult::ENothing;
+
+
+			}
+		}else
+			result = TResult::EUnknownError;
+	}else
+		result = ResultHandle(nCode);
+
+	if(m_pListener)
+		m_pListener->OnUpdateDataFinish(m_UserData, result);
+
+}
+
+BOOL CMSearchCourse::UpdateCache()
+{
+	BOOL ret = FALSE;
+	sqlite3_stmt *stmt;
+	CHAR sql[1024];
+	sql[0] = '\0';
+	snprintf(sql,1024,"DELETE FROM %s WHERE flag=%s AND id NOT IN %s",TABLE_SEARCH_CATEGORY,"'course'",sqlNotin.c_str());
+
+	sqlite3* db = CheckTable();
+	if(db == NULL)
+		return FALSE;
+
+	if(sqlite3_prepare_v2(db, sql, -1, &stmt, NULL) == SQLITE_OK){
+		if(sqlite3_step(stmt) == SQLITE_DONE){
+			ret = TRUE;
+		}else{
+			CM_ERRP("exec %s failed.error:%s", sql, sqlite3_errmsg(db));
+		}
+	}else{
+		CM_ERRP("exec %s failed.error:%s", sql, sqlite3_errmsg(db));
+	}
+	return ret;
+}
+
+TSearchItem* CMSearchCourse::GetHighSearch()
+{
+	if(highSearchItem)
+		return highSearchItem;
+	return NULL;
+}

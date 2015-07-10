@@ -1,0 +1,79 @@
+//
+//  CMPositionCourseControl.m
+//  MLPlayer
+//
+//  Created by sunjj on 13-7-15.
+//  Copyright (c) 2013年 w. All rights reserved.
+//
+
+#import "CMPositionCourseControl.h"
+
+@interface CMPositionCourseControl ()
+
+@end
+
+@implementation CMPositionCourseControl
+@synthesize controlview;
+
+
+-(CMContenthandler*)GetContenthandler
+{
+    if(controlview!=NULL)
+        return self.controlview.Contenthandler;
+    else
+        return NULL;
+}
+
+- (id)initWithNibName:(NSString *)nibNameOrNil bundle:(NSBundle *)nibBundleOrNil
+{
+    self = [super initWithNibName:nibNameOrNil bundle:nibBundleOrNil];
+    if (self) {
+        // Custom initialization
+    }
+    return self;
+}
+
+- (void)viewDidLoad
+{
+    [super viewDidLoad];
+    self.title=I(@"职位课程");
+    self.titleLabel.text = self.title;
+    
+    self.navigationController.navigationBarHidden = NO;
+        
+    controlview=[[CMPositionCourseView alloc]initWithFrame:CGRectMake(0, 0, UI_IOS_WINDOW_WIDTH,UI_IOS_WINDOW_HEIGHT-44-20) refresh:YES];
+    [self.view addSubview:controlview];
+    
+    [controlview automaticRefreshUseCache:YES];
+
+    controlview.userInteractionEnabled = YES;
+    
+	// Do any additional setup after loading the view.
+}
+
+-(void)viewWillDisappear:(BOOL)animated
+{
+    //MLPlayerAppDelegate* appDelegate = (MLPlayerAppDelegate*)[[UIApplication sharedApplication] delegate];
+
+    //appDelegate.navigationController.navigationBarHidden = YES;
+    
+    [super viewWillDisappear:animated];
+
+}
+
+- (void)didReceiveMemoryWarning
+{
+    [super didReceiveMemoryWarning];
+    // Dispose of any resources that can be recreated.
+}
+
+-(void)dealloc
+{
+    CMRELEASE(controlview);
+# if ! __has_feature(objc_arc)
+    [super dealloc];
+# endif
+    
+}
+
+@end

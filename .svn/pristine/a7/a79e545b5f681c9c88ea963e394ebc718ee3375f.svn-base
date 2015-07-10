@@ -1,0 +1,280 @@
+//
+//  CMShakeController.m
+//  MLPlayer
+//
+//  Created by 王 浩沣 on 13-7-13.
+//  Copyright (c) 2013年 w. All rights reserved.
+//
+
+#import "stdafx.h"
+#import "cmcommon.h"
+#import "CMShakeController.h"
+#import "cmsettings.h"
+
+@interface CMShakeController (custom)
+
+- (void)shakeDown;
+
+@end
+
+@implementation CMShakeController
+
+- (id)initWithNibName:(NSString *)nibNameOrNil bundle:(NSBundle *)nibBundleOrNil
+{
+    self = [super initWithNibName:nibNameOrNil bundle:nibBundleOrNil];
+    if (self) {
+        // Custom initialization
+    }
+    return self;
+}
+
+- (void)viewDidLoad
+{
+    [super viewDidLoad];
+    
+    self.title=I(@"摇一摇");
+
+    NSString *strAudio = [[NSBundle mainBundle] pathForResource:@"glass" ofType:@"wav"];
+
+    AudioServicesCreateSystemSoundID((__bridge CFURLRef)[NSURL URLWithString:strAudio], &sysSoundID);
+
+    self.view.backgroundColor=[UIColor whiteColor];
+    
+    
+    appDelegate = (MLPlayerAppDelegate*)[[UIApplication sharedApplication] delegate];
+    
+
+    
+    //加入中间图片
+    
+    UIImage *shakeImg=[UIImage imageNamed:@"shake_center"];
+    
+    
+    UIImageView *shakeView = [[UIImageView alloc] initWithFrame:CGRectMake((UI_IOS_WINDOW_WIDTH-shakeImg.size.width)/2, (UI_IOS_WINDOW_HEIGHT-shakeImg.size.height)/2-40, shakeImg.size.width, shakeImg.size.height)];
+    
+    [shakeView setImage:shakeImg];
+    
+    [self.view addSubview:shakeView];
+    
+    
+    //加入动画图片
+    UIImageView *pImgUp = [[UIImageView alloc] initWithFrame:CGRectMake((UI_IOS_WINDOW_WIDTH-125)/2, UI_IOS_WINDOW_HEIGHT/2-100, 125, 100)];
+    pImgUp.backgroundColor = [UIColor clearColor];
+    pImgUp.image = [UIImage imageNamed:@"shakeup"];
+    
+    m_pImgUp = [[UIView alloc] initWithFrame:CGRectMake(0, -UI_IOS_WINDOW_HEIGHT/2, UI_IOS_WINDOW_WIDTH, UI_IOS_WINDOW_HEIGHT/2)];
+    m_pImgUp.backgroundColor = [UIColor colorWithRed:38/255.0 green:38/255.0 blue:38/255.0 alpha:1.0];
+    [m_pImgUp addSubview:pImgUp];
+    [appDelegate.window addSubview:m_pImgUp];
+    
+    UIImageView *pImgDown = [[UIImageView alloc] initWithFrame:CGRectMake((UI_IOS_WINDOW_WIDTH-125)/2, 0, 125, 100)];
+    pImgDown.backgroundColor = [UIColor clearColor];
+    pImgDown.image = [UIImage imageNamed:@"shakedown"];
+    
+    m_pImgDown = [[UIView alloc] initWithFrame:CGRectMake(0, UI_IOS_WINDOW_HEIGHT, UI_IOS_WINDOW_WIDTH, UI_IOS_WINDOW_HEIGHT/2)];
+    m_pImgDown.backgroundColor = [UIColor colorWithRed:38/255.0 green:38/255.0 blue:38/255.0 alpha:1.0];
+    [m_pImgDown addSubview:pImgDown];
+    [appDelegate.window addSubview:m_pImgDown];
+    
+    upImgHidden = YES;
+    downImgHidden = YES;
+    animationDone = YES;
+	// Do any additional setup after loading the view.
+}
+
+- (void)didReceiveMemoryWarning
+{
+    [super didReceiveMemoryWarning];
+    // Dispose of any resources that can be recreated.
+}
+
+-(BOOL)canBecomeFirstResponder
+{
+    return YES;
+    
+}
+
+-(void)viewDidAppear:(BOOL)animated
+{
+    [super viewDidAppear:animated];
+    [self becomeFirstResponder];
+}
+
+- (void)viewWillDisappear:(BOOL)animated {
+    [self resignFirstResponder];
+    [super viewWillDisappear:animated];
+}
+
+
+#pragma mark - shake
+
+- (void)motionBegan:(UIEventSubtype)motion withEvent:(UIEvent *)event
+{
+    if (!CMGlobal::TheOne().IsOffline() && animationDone )
+    {
+        if (motion == UIEventSubtypeMotionShake)
+        {
+            [UIView transitionWithView:m_pImgUp
+                              duration:0.5f
+                               options:UIViewAnimationOptionCurveEaseInOut
+                            animations:^{
+                                CGRect upframe = m_pImgUp.frame;
+                                while (upframe.origin.y <= -1)
+                                {
+                                    upframe.origin.y += 1;
+                                }
+                                m_pImgUp.frame = upframe;
+                            }
+                            completion:^(BOOL finished) {
+                                upImgHidden = NO;
+                                
+                                if (!downImgHidden)
+                                {
+                                    [self performSelector:@selector(reset) withObject:nil afterDelay:0.3];
+                                }
+                            }];
+            
+            [UIView transitionWithView:m_pImgDown
+                              duration:0.5f
+                               options:UIViewAnimationOptionCurveEaseInOut
+                            animations:^{
+                                CGRect downframe = m_pImgDown.frame;
+                                while (downframe.origin.y >= (UI_IOS_WINDOW_HEIGHT/2+1))
+                                {
+                                    downframe.origin.y -= 1;
+                                }
+                                m_pImgDown.frame = downframe;
+                            }
+                            completion:^(BOOL finished) {
+                                downImgHidden = NO;
+                                
+                                if (!upImgHidden)
+                                {
+                                    [self performSelector:@selector(reset) withObject:nil afterDelay:0.3];
+                                }
+                            }];
+        }
+    }
+}
+
+- (void)motionCancelled:(UIEventSubtype)motion withEvent:(UIEvent *)event
+{
+    if (motion == UIEventSubtypeMotionShake)
+    {
+        [self performSelector:@selector(reset) withObject:nil afterDelay:0.3];
+    }
+}
+
+- (void)motionEnded:(UIEventSubtype)motion withEvent:(UIEvent *)event
+{
+    if (motion == UIEventSubtypeMotionShake)
+    {
+        [self performSelector:@selector(reset) withObject:nil afterDelay:0.3];
+    }
+}
+
+
+- (void)shakeToDetail
+{
+    [self shakeDown];
+    
+    
+    TBrowserItem* item=NULL;
+    
+    if(m_pShake->GetItemModel(0)==0)
+    {
+        item = new TClassItem();
+    }
+    else
+    {
+        item = new TCoursewareItem();
+    }
+
+    m_pShake->GetItem(0, item);
+    
+	CMNavgateItem* nav = [[CMNavgateItem alloc] init];
+    nav->bIsShake = YES;
+	[nav NavgateItem:self item:*item];
+    
+    SAFEDELETE(item);
+}
+
+
+-(void)loadShakeData
+{
+    if (!m_pShakeListener)
+    {
+        m_pShakeListener = new  CMShakeUpdateListener();
+    }
+    
+    if (!m_pShake)
+    {
+        m_pShake = new CMShake(m_pShakeListener);
+        m_pShake->SetUserData(BridgeObjectToC(self));
+    }
+    m_pShake->SetUserData(BridgeObjectToC(self));
+
+    m_pShake->SetListener(m_pShakeListener, NULL);
+    m_pShake->Request();
+}
+
+- (void)reset
+{
+    if (!upImgHidden && !downImgHidden)
+    {
+        AudioServicesPlaySystemSound(sysSoundID);
+        AudioServicesPlaySystemSound(kSystemSoundID_Vibrate);
+        [self loadShakeData];
+        
+//        [browserview loadShakeDate:self];
+        animationDone = NO;
+        
+        [UIView transitionWithView:m_pImgUp
+                          duration:0.5f
+                           options:UIViewAnimationOptionCurveEaseInOut
+                        animations:^{
+                            CGRect upframe = m_pImgUp.frame;
+                            while (upframe.origin.y >= -(UI_IOS_WINDOW_HEIGHT/2 -1))
+                            {
+                                upframe.origin.y -= 1;
+                            }
+                            m_pImgUp.frame = upframe;
+                            upImgHidden = YES;
+                        }
+                        completion:^(BOOL finished) {
+                        }];
+        
+        [UIView transitionWithView:m_pImgDown
+                          duration:0.5f
+                           options:UIViewAnimationOptionCurveEaseInOut
+                        animations:^{
+                            CGRect downframe = m_pImgDown.frame;
+                            while (downframe.origin.y <= UI_IOS_WINDOW_HEIGHT-1)
+                            {
+                                downframe.origin.y += 1;
+                            }
+                            m_pImgDown.frame = downframe;
+                            downImgHidden = YES;
+                        }
+                        completion:^(BOOL finished) {
+                            
+                        }];
+    }
+}
+
+- (void)shakeDown
+{
+    animationDone = YES;
+}
+
+-(void)dealloc
+{
+    SAFEDELETE(m_pShakeListener);
+
+    SAFEDELETE(m_pShake);
+    
+
+
+}
+
+@end

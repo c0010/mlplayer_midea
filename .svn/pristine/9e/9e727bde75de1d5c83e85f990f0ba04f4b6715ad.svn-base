@@ -1,0 +1,587 @@
+//
+//  CMSettingControl.mm
+//  MLPlayer
+//
+//  Created by wuding on 11-5-6.
+//  Copyright 2011 w. All rights reserved.
+//
+#import "CMSettingControl.h"
+#include "cmgeneral.h"
+#import "cmglobal.h"
+#include "version.h"
+#import "CMAboutController.h"
+#import "CMInteractViewController.h"
+#import "CMMainControl.h"
+//#import "MobClick.h"
+#import "UISwitch+JGLabel.h"
+#import "CMVersionVerifyAgent.h"
+
+@implementation CMSettingControl
+@synthesize tableViews,/*mySwitch,lbAbout,*/shakeSwitch/*autoloadSwitch*/;
+
+#define kCellIdentifier @"com.apple.CMSettingControl.CellIdentifier"
+
+- (void)backAction:(id)sender
+{
+	[self dismissModalViewControllerAnimated:YES];
+}
+
+- (void)presentModallyOn:(UIViewController *)parent
+{
+	CurrentViewController = parent;
+	
+    UINavigationController *nav;
+    
+    nav = [[UINavigationController alloc] initWithRootViewController:self];
+    assert(nav != nil);
+	
+    self.navigationItem.leftBarButtonItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemDone   target:self action:@selector(backAction:)];
+	assert(self.navigationItem.leftBarButtonItem != nil);
+    
+		// Present the navigation controller on the specified parent 
+		// view controller.    
+    [parent presentModalViewController:nav animated:YES];
+}
+
+
+- (id)initWithNibName:(NSString *)nibNameOrNil bundle:(NSBundle *)nibBundleOrNil
+{
+	self = [super initWithNibName:nibNameOrNil bundle:nibBundleOrNil];
+	tableViews = nil;
+	//mySwitch = nil;
+		
+	return self;
+}
+
+-(void)goExit
+{
+	UIActionSheet *styleAlert = [[UIActionSheet alloc]initWithTitle:I(@"确定要注销吗?") 
+														   delegate:self
+												 		   cancelButtonTitle:I(@"取消")
+											 			   destructiveButtonTitle:nil 
+												           otherButtonTitles:I(@"确定"),nil,nil];
+
+	[styleAlert showInView:self.view];
+}
+
+-(void)actionSheet:(UIActionSheet *)actionSheet clickedButtonAtIndex:(NSInteger)buttonIndex
+{
+	
+	switch (buttonIndex) {
+		case 0://确定
+		{	
+			SETTING.Logout();
+            SETTING.LogoutWithClearSid();
+
+            
+            NSUserDefaults *ud = [NSUserDefaults standardUserDefaults];
+            [ud removeObjectForKey:kUDOpenPush];
+            [ud removeObjectForKey:kUDPushID];
+            [ud removeObjectForKey:kUDPushType];
+
+      
+			// 显示外部NavBar，隐藏内部NavBar
+            [AppDelegate.navigationController popToViewController:[AppDelegate.navigationController.viewControllers objectAtIndex:0] animated:NO];
+
+            //离线不接收消息
+            [XmppHandler goOffline];
+			
+			[[NSNotificationCenter defaultCenter] postNotificationName:@"loginstate"
+																object:nil
+															  userInfo:[NSDictionary dictionaryWithObject:[NSString stringWithFormat:@"%d",2]
+																					   forKey:@"name"]];
+
+			break;
+		}
+		case 1://取消
+			   //NSLog(@"2");
+			break;
+
+		default:
+			NSLog(@"undefault");
+			break;
+	}
+	
+
+}
+//
+//-(void)autoloadSwitchAction
+//{
+ //   SETTING.SetAutoLoadMore(autoloadSwitch.on);
+//	SETTING.Save();
+//    
+//}
+
+
+-(void)viewDidLoad
+{
+	[super viewDidLoad];
+	//[self mySwitch];
+
+    self.navigationController.navigationBarHidden = NO;
+    
+    if (shakeSwitch == nil) {
+		CGRect frame = CGRectMake(210, 12, 0, 0);
+		shakeSwitch = [[UISwitch alloc] initWithFrame:frame];
+        [shakeSwitch setFrame:CGRectMake(320-shakeSwitch.frame.size.width-30, 12, 0, 0)];
+        
+        shakeSwitch.onTitle.text = I(@"开");
+        shakeSwitch.offTitle.text = I(@"关");
+
+		[shakeSwitch addTarget:self action:@selector(shakeSwitchAction) forControlEvents:UIControlEventValueChanged];
+	}
+    
+    
+//    if (autoloadSwitch == nil) {
+//		CGRect frame = CGRectMake(210, 12, 0, 0);
+//		autoloadSwitch = [[UISwitch alloc] initWithFrame:frame];
+//        [autoloadSwitch setFrame:CGRectMake(320-autoloadSwitch.frame.size.width-30, 12, 0, 0)];
+//        
+//		[autoloadSwitch addTarget:self action:@selector(autoloadSwitchAction) forControlEvents:UIControlEventValueChanged];
+//	}
+    
+	
+	CGRect f = [[self view] bounds];
+
+//	UIBarButtonItem *loginoutItem = [[UIBarButtonItem alloc] initWithTitle: I(@"注销") style:UIBarButtonItemStyleBordered target:self action:@selector(goExit)];
+//	
+//	self.navigationItem.rightBarButtonItem=loginoutItem;
+//	[loginoutItem release];
+	
+	[self setTableViews:[[UITableView alloc] initWithFrame:f style:UITableViewStyleGrouped]];
+	[[self tableViews] setDelegate:self];
+	[[self tableViews] setDataSource:self];
+	[[self tableViews] setAutoresizingMask:UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight];
+//    self.view.backgroundColor = [UIColor colorWithRed:226.0/255.0f green:226.0/255.0f blue:226.0/255.0f alpha:1];
+    if ([[self tableViews] respondsToSelector:@selector(setSeparatorInset:)]) {
+        
+        [[self tableViews] setSeparatorInset:UIEdgeInsetsZero];
+        
+    }
+    [[self tableViews] setBackgroundColor:kColorBackground];
+    
+    
+	[self.view addSubview:tableViews];
+    
+//    self.lbAbout=[[UILabel alloc]init];
+//    if (!__iOS7) {
+//        self.lbAbout.frame = CGRectMake(220, 5, 60, 40);
+//    }
+//    else
+//        self.lbAbout.frame = CGRectMake(230, 5, 60, 40);
+//    self.lbAbout.textAlignment = NSTextAlignmentRight;
+//    self.lbAbout.textColor = [UIColor lightGrayColor];
+//    [self.lbAbout setBackgroundColor:[UIColor clearColor]];
+//    
+//    self.lbAbout.text = [NSString stringWithFormat:@"V%@",AppVersion];
+	
+}
+#pragma mark UIViewController delegate
+
+- (void)viewWillAppear:(BOOL)animated
+{
+	[tableViews reloadData];	
+}
+
+
+//iOS8上 cell分割线置顶
+-(void)viewDidLayoutSubviews
+{
+    [super viewDidLayoutSubviews];
+    
+    if ([self.tableViews respondsToSelector:@selector(setSeparatorInset:)]) {
+        [self.tableViews setSeparatorInset:UIEdgeInsetsZero];
+    }
+    
+    if ([self.tableViews respondsToSelector:@selector(setLayoutMargins:)]) {
+        [self.tableViews setLayoutMargins:UIEdgeInsetsZero];
+    }
+}
+
+-(void)tableView:(UITableView *)tableView willDisplayCell:(UITableViewCell *)cell forRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    if ([cell respondsToSelector:@selector(setSeparatorInset:)]) {
+        [cell setSeparatorInset:UIEdgeInsetsZero];
+    }
+    
+    if ([cell respondsToSelector:@selector(setLayoutMargins:)]) {
+        [cell setLayoutMargins:UIEdgeInsetsZero];
+    }
+}
+#pragma mark UITableView delegate methods
+
+
+// the table's selection has changed, switch to that item's UIViewController
+- (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    [tableView deselectRowAtIndexPath:indexPath animated:YES];
+	int row = 0;
+	switch (indexPath.section) {
+		case 0:
+			break;
+		case 1:
+			row = 1;
+			break;
+		case 2:
+			row = 4;
+			break;
+//        case 3:
+//            row = 8;
+		default:
+			break;
+	}
+	row += indexPath.row;
+	switch (row)
+	{
+        case 0:
+       
+            break;
+        
+            
+//		case 1:
+//		{
+//            break;
+//            
+//   
+//		}
+
+//        case 2:
+//		{
+//			CMSettingCommControl* settingCommControl = [[CMSettingCommControl alloc] init];
+//			[settingCommControl setSettingType:@"buffertime"];
+//			settingCommControl.title = I(@"播放缓冲时间");
+//			[self.navigationController pushViewController:settingCommControl animated:YES];
+//			
+//			break;
+//		}
+//		case 3:
+//		{			
+//			CMSettingCommControl* settingCommControl = [[CMSettingCommControl alloc] init];
+//			[settingCommControl setSettingType:@"playmode"];
+//			settingCommControl.title = I(@"播放模式");
+//			[self.navigationController pushViewController:settingCommControl animated:YES];
+//			break;
+//		}
+//		case 4:
+//		{
+//			CMSettingCommControl* settingCommControl = [[CMSettingCommControl alloc] init];
+//			[settingCommControl setSettingType:@"fullscreenmode"];
+//			settingCommControl.title = I(@"全屏模式");
+//			[self.navigationController pushViewController:settingCommControl animated:YES];
+//			break;
+//		}
+//		case 5:
+//		{
+//            
+//			CMPasswdControl* ResetPassword = [[CMPasswdControl alloc] init];
+//			ResetPassword.title = I(@"修改密码");
+//			[self.navigationController pushViewController:ResetPassword animated:YES];
+//			break;
+//		}
+		case 1:
+			if(SETTING.DeleteCache())
+			{
+				[tool ShowAlert:I(@"清除成功")];			
+			}else {
+				[tool ShowAlert:I(@"清除失败")];
+			}
+			
+			break;
+        case 2:
+        {
+           // [MobClick checkUpdate]; // 走美的自己的升级接口
+            [[CMVersionVerifyAgent sharedVersionVerifyAgent] checkUpdate];
+            
+        }
+            break;
+		case 3:
+		{
+            [self goExit];
+            break;
+		}
+		case 4:{
+            CMAboutController *aboutControl =[[CMAboutController alloc]init];
+            [self.navigationController pushViewController:aboutControl animated:YES ];
+            
+            
+            
+            
+            //	[MessageBox DoModalWithTitle:I(@"关于") message:I(@"关于") mode:MODE_OK];
+			
+			break;
+        }
+		default:
+			break;
+	}
+
+	
+}
+
+#pragma mark UITableView data source methods
+
+// tell our table how many sections or groups it will have (always 1(our case)
+- (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView
+{
+	return 3;
+}
+- (CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath
+{
+	return 50;
+}
+// tell our table how many rows it will have,(our case the size of our menuList
+- (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
+{
+	switch (section) {
+		case 0:
+			return 1;
+		case 1:
+			return 3;
+		case 2:
+			return 1;
+//        case 3:
+//            return 1;
+		default:
+			break;
+	}
+
+	return 0;
+}
+
+- ( CGFloat )tableView:( UITableView *)tableView heightForFooterInSection:(NSInteger )section
+{
+    if (section == 2) {
+        return 20.0 ;
+    }
+    return 1.0 ;
+}
+
+- ( CGFloat )tableView:( UITableView *)tableView heightForHeaderInSection:(NSInteger )section
+{
+    
+    return 20.0 ;
+    
+}
+
+
+// tell our table what kind of cell to use and its title for the given row
+- (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    
+   // [lbAbout setText:@""];
+	UITableViewCell *cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleSubtitle reuseIdentifier:kCellIdentifier];
+	
+	cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
+	[cell setSelectionStyle:UITableViewCellSelectionStyleGray];
+	
+	CGRect f = CGRectMake(15, 8, 260, 15);
+	UILabel * lbltitle = [[UILabel alloc] initWithFrame:f];
+    [lbltitle setBackgroundColor:[UIColor clearColor]];
+	
+	lbltitle.textColor = kTextColorDark;
+	lbltitle.font = [UIFont systemFontOfSize:kTextSizeMid];
+//	
+//	f.origin.y += 15 + 8; 
+//	UILabel * lblview = [[UILabel alloc]initWithFrame:f];
+//	[lblview setBackgroundColor:[UIColor clearColor]];
+//	lblview.textColor = kTextColorNormal;
+//	lblview.font = [UIFont systemFontOfSize:kTextSizeSml];
+	
+	[cell.contentView addSubview:lbltitle];
+	//[cell.contentView addSubview:lblview];
+	
+	
+	NSString *strTitle=@"";
+	//NSString *strValue=@"";
+
+	int row = 0;
+	switch (indexPath.section) {
+		case 0:
+			break;
+		case 1:
+			row = 1;
+			break;
+		case 2:
+			row = 4;
+//			break;
+//        case 3:
+//            row = 8;
+//            break;
+		default:
+			break;
+	}
+	row += indexPath.row;
+	switch (row)
+	{
+        case 0:
+            [cell setSelectionStyle:UITableViewCellSelectionStyleNone];
+
+            strTitle=  I(@"摇一摇");
+            shakeSwitch.on = SETTING.GetShake();
+			[cell.contentView addSubview:shakeSwitch];
+			cell.accessoryType = UITableViewCellAccessoryNone;
+            lbltitle.frame = CGRectMake(15, 18, 260, 15);
+            break;
+//		case 1:
+//            [cell setSelectionStyle:UITableViewCellSelectionStyleNone];
+//			mySwitch.on = SETTING.GetAutoLogin();
+//			[cell.contentView addSubview:mySwitch];
+//			cell.accessoryType = UITableViewCellAccessoryNone;
+//			strTitle = I(@"自动登录");
+//			lbltitle.frame = CGRectMake(15, 18, 260, 15);
+//			lblview.hidden = YES;
+//			strValue = @"";
+//			break;
+//            
+            
+//		case 1:
+//            [cell setSelectionStyle:UITableViewCellSelectionStyleNone];
+//
+//            
+//            strTitle=  I(@"自动加载更多");
+//            autoloadSwitch.on = SETTING.GetAutoLoadMore();
+//			[cell.contentView addSubview:autoloadSwitch];
+//			cell.accessoryType = UITableViewCellAccessoryNone;
+//            lbltitle.frame = CGRectMake(15, 18, 260, 15);
+//            break;
+//
+//            
+//            
+//            
+//            
+//            strTitle=  I(@"自动加载更多");
+//			switch(SETTING.GetAutoLoadMore())
+//        {
+//			case 0:
+//				strValue = I(@"不自动加载");
+//				break;
+//			case 1:
+//				strValue = I(@"自动加载");
+//				break;
+//        }
+//			break;
+//		case 2:
+//            strTitle=  I(@"播放缓冲时间");
+//			strValue = [NSString stringWithFormat:@"<%d秒>",SETTING.GetBufTime()];
+//            
+//			break;
+//            
+//			
+//		case 3:
+//            strTitle=  I(@"播放模式");
+//			
+//			switch(SETTING.GetPlayMode())
+//        {
+//            case 1:
+//                strValue = I(@"全屏");
+//                break;
+//            case 2:
+//                strValue = I(@"普通");
+//                break;
+//        }			
+//			break;
+//		case 4:
+//	
+//            
+//            strTitle=  I(@"全屏模式");
+//			switch(SETTING.GetFullScreenMode())
+//        {
+//            case 1:
+//                strValue = I(@"保持宽高比例");
+//                break;
+//            case 2:
+//                strValue = I(@"填满屏幕");
+//                break;
+//        }
+//
+//            break;
+//         
+//		case 5:
+//            strTitle=  I(@"修改密码");
+//            lbltitle.frame = CGRectMake(15, 18, 260, 15);
+//			strValue = @"";//I(@"修改密码");
+//			break;
+		case 1:
+			strTitle=  I(@"清除缓存");
+			//strValue = I(@"清除各类缓存(不包括用户信息)");
+            lbltitle.frame = CGRectMake(15, 18, 260, 15);
+			break;
+        case 2:
+            strTitle=  I(@"检测新版本");
+            //strValue = I(@"清除各类缓存(不包括用户信息)");
+            lbltitle.frame = CGRectMake(15, 18, 260, 15);
+            break;
+		case 3:
+            lbltitle.frame = CGRectMake(15, 18, 260, 15);
+			//lblview.hidden = YES;
+			strTitle=  I(@"注销");
+			//strValue = @"";
+			break;
+
+			
+		case 4:
+            
+            lbltitle.frame = CGRectMake(15, 18, 260, 15);
+		//	lblview.hidden = YES;
+            strTitle= [NSString stringWithFormat:@"%@ (%@)", I(@"关于"), [NSString stringWithFormat:@"V%@",AppVersion]];
+			//strValue = @"";
+            
+            //[cell.contentView addSubview:lbAbout];
+            
+			break;
+		default:
+			break;
+	}
+		
+	lbltitle.text = strTitle;
+	//lblview.text =strValue;
+		
+	return cell;
+}
+
+//-(UISwitch*)mySwitch
+//{
+//	if (mySwitch == nil) {
+//		CGRect frame = CGRectMake(210, 12, 100, 25.0);
+//		mySwitch = [[UISwitch alloc] initWithFrame:frame];
+//        [mySwitch setFrame:CGRectMake(320-mySwitch.frame.size.width-30, 12, 0, 0)];
+//
+//		[mySwitch addTarget:self action:@selector(mySwitchAction) forControlEvents:UIControlEventValueChanged];
+//	}
+//	return mySwitch;
+//	
+//}
+
+-(void)shakeSwitchAction
+{
+    
+    SETTING.SetShake(shakeSwitch.on);
+	SETTING.Save();
+    
+}
+
+//- (void)mySwitchAction{
+//	
+//	SETTING.SetAutoLogin(mySwitch.on);	
+//	SETTING.Save();
+//}
+
+- (void)didReceiveMemoryWarning {
+    // Releases the view if it doesn't have a superview.
+    [super didReceiveMemoryWarning];
+    
+    // Release any cached data, images, etc. that aren't in use.
+}
+
+
+- (void)viewDidUnload {
+    [super viewDidUnload];
+    // Release any retained subviews of the main view.
+    // e.g. self.myOutlet = nil;
+}
+
+
+- (void)dealloc {
+    CMRELEASE(lbAbout);
+	CMRELEASE(mySwitch);
+}
+@end

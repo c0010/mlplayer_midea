@@ -1,0 +1,32 @@
+//
+//  CMConfig.h
+//  MLPlayer
+//
+//  用于一些需要自动替换的全局定义
+//
+//  Created by hushengwu on 14/11/19.
+//  Copyright (c) 2014年 w. All rights reserved.
+//
+
+#ifndef MLPlayer_CMConfig_h
+#define MLPlayer_CMConfig_h
+
+
+#define  ShowEidInput 0
+
+#define  defaultEid "ulp_midea"
+
+//appstore下载地址
+#define kWetoolsDownloadUrl @"itms-services://?action=download-manifest&url=https://cert.wunding.com/upload/we/iphone.plist"
+
+//WE工具Schema
+#define WEToolSchema @"com.wunding.wetool"
+
+//友盟appkey
+#define  UMENG_APPKEY @"512b062b527015465d00003"
+//@"5122e7615270154a770000c2"
+//云学习 512b068a527015043e000025
+//云南电网 5387dd8156240be6e9037780
+//深圳电子政务中心 54b7781efd98c5112c000195
+
+#endif

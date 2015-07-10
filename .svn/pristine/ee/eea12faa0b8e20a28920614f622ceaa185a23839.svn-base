@@ -1,0 +1,415 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 45;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		007EE95317BA232400B53D73 /* libz.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 007EE95217BA232400B53D73 /* libz.dylib */; };
+		007F7C1717F52805006FC2FE /* cmhttpc_iph.h in Headers */ = {isa = PBXBuildFile; fileRef = 007F7C1517F52805006FC2FE /* cmhttpc_iph.h */; };
+		007F7C1817F52805006FC2FE /* cmhttpc_iph.mm in Sources */ = {isa = PBXBuildFile; fileRef = 007F7C1617F52805006FC2FE /* cmhttpc_iph.mm */; };
+		00A1848D17C5AA4D0072B332 /* cmhttpc_curl.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 00A1848C17C5AA4D0072B332 /* cmhttpc_curl.cpp */; };
+		00A1849917C5C2BA0072B332 /* curl.h in Headers */ = {isa = PBXBuildFile; fileRef = 00A1849017C5C2BA0072B332 /* curl.h */; };
+		00A1849A17C5C2BA0072B332 /* curlbuild.h in Headers */ = {isa = PBXBuildFile; fileRef = 00A1849117C5C2BA0072B332 /* curlbuild.h */; };
+		00A1849B17C5C2BA0072B332 /* curlrules.h in Headers */ = {isa = PBXBuildFile; fileRef = 00A1849217C5C2BA0072B332 /* curlrules.h */; };
+		00A1849C17C5C2BA0072B332 /* curlver.h in Headers */ = {isa = PBXBuildFile; fileRef = 00A1849317C5C2BA0072B332 /* curlver.h */; };
+		00A1849D17C5C2BA0072B332 /* easy.h in Headers */ = {isa = PBXBuildFile; fileRef = 00A1849417C5C2BA0072B332 /* easy.h */; };
+		00A1849E17C5C2BA0072B332 /* mprintf.h in Headers */ = {isa = PBXBuildFile; fileRef = 00A1849517C5C2BA0072B332 /* mprintf.h */; };
+		00A1849F17C5C2BA0072B332 /* multi.h in Headers */ = {isa = PBXBuildFile; fileRef = 00A1849617C5C2BA0072B332 /* multi.h */; };
+		00A184A017C5C2BA0072B332 /* stdcheaders.h in Headers */ = {isa = PBXBuildFile; fileRef = 00A1849717C5C2BA0072B332 /* stdcheaders.h */; };
+		00A184A117C5C2BA0072B332 /* typecheck-gcc.h in Headers */ = {isa = PBXBuildFile; fileRef = 00A1849817C5C2BA0072B332 /* typecheck-gcc.h */; };
+		00C36B6F1495B701008B8748 /* cmnetworkmgr.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 00C36B6E1495B700008B8748 /* cmnetworkmgr.cpp */; };
+		317522F01A42B9CE00A801EA /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 317522EF1A42B9CE00A801EA /* Security.framework */; };
+		317522F21A42B9D700A801EA /* CFNetwork.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 317522F11A42B9D700A801EA /* CFNetwork.framework */; };
+		AA747D9F0F9514B9006C5449 /* network_Prefix.pch in Headers */ = {isa = PBXBuildFile; fileRef = AA747D9E0F9514B9006C5449 /* network_Prefix.pch */; };
+		AACBBE4A0F95108600F1A2B1 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AACBBE490F95108600F1A2B1 /* Foundation.framework */; };
+		B00E5F2714848A8A00481721 /* cmnetworkmgr.h in Headers */ = {isa = PBXBuildFile; fileRef = B00E5F2614848A8A00481721 /* cmnetworkmgr.h */; };
+		E2767FAD18F6959000767734 /* Reachability.h in Headers */ = {isa = PBXBuildFile; fileRef = E2767FAB18F6959000767734 /* Reachability.h */; };
+		E2767FAE18F6959000767734 /* Reachability.m in Sources */ = {isa = PBXBuildFile; fileRef = E2767FAC18F6959000767734 /* Reachability.m */; };
+		E4009C34140B964400DD44AC /* cmdownloader.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E4009BFF140B964400DD44AC /* cmdownloader.cpp */; };
+		E4009C35140B964400DD44AC /* cmdownloader.h in Headers */ = {isa = PBXBuildFile; fileRef = E4009C00140B964400DD44AC /* cmdownloader.h */; };
+		E4009C36140B964400DD44AC /* cmhttpc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E4009C01140B964400DD44AC /* cmhttpc.cpp */; };
+		E4009C37140B964400DD44AC /* cmhttpc.h in Headers */ = {isa = PBXBuildFile; fileRef = E4009C02140B964400DD44AC /* cmhttpc.h */; };
+		E4009C38140B964400DD44AC /* cmnetwork.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E4009C03140B964400DD44AC /* cmnetwork.cpp */; };
+		E4009C39140B964400DD44AC /* cmnetwork.h in Headers */ = {isa = PBXBuildFile; fileRef = E4009C04140B964400DD44AC /* cmnetwork.h */; };
+		E4009C3D140B964400DD44AC /* cmnetwork_iph.mm in Sources */ = {isa = PBXBuildFile; fileRef = E4009C18140B964400DD44AC /* cmnetwork_iph.mm */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		007EE95217BA232400B53D73 /* libz.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libz.dylib; path = usr/lib/libz.dylib; sourceTree = SDKROOT; };
+		007F7C1517F52805006FC2FE /* cmhttpc_iph.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = cmhttpc_iph.h; path = ../cmhttpc_iph.h; sourceTree = "<group>"; };
+		007F7C1617F52805006FC2FE /* cmhttpc_iph.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = cmhttpc_iph.mm; path = ../cmhttpc_iph.mm; sourceTree = "<group>"; };
+		00A1848C17C5AA4D0072B332 /* cmhttpc_curl.cpp */ = {isa = PBXFileReference; fileEncoding = 2147483673; lastKnownFileType = sourcecode.cpp.cpp; name = cmhttpc_curl.cpp; path = ../cmhttpc_curl.cpp; sourceTree = "<group>"; };
+		00A1849017C5C2BA0072B332 /* curl.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = curl.h; sourceTree = "<group>"; };
+		00A1849117C5C2BA0072B332 /* curlbuild.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = curlbuild.h; sourceTree = "<group>"; };
+		00A1849217C5C2BA0072B332 /* curlrules.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = curlrules.h; sourceTree = "<group>"; };
+		00A1849317C5C2BA0072B332 /* curlver.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = curlver.h; sourceTree = "<group>"; };
+		00A1849417C5C2BA0072B332 /* easy.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = easy.h; sourceTree = "<group>"; };
+		00A1849517C5C2BA0072B332 /* mprintf.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = mprintf.h; sourceTree = "<group>"; };
+		00A1849617C5C2BA0072B332 /* multi.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = multi.h; sourceTree = "<group>"; };
+		00A1849717C5C2BA0072B332 /* stdcheaders.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = stdcheaders.h; sourceTree = "<group>"; };
+		00A1849817C5C2BA0072B332 /* typecheck-gcc.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "typecheck-gcc.h"; sourceTree = "<group>"; };
+		00C36B6E1495B700008B8748 /* cmnetworkmgr.cpp */ = {isa = PBXFileReference; fileEncoding = 2147483673; lastKnownFileType = sourcecode.cpp.cpp; name = cmnetworkmgr.cpp; path = ../cmnetworkmgr.cpp; sourceTree = SOURCE_ROOT; };
+		3136ADF81A820DA20032A410 /* libcurl.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libcurl.a; path = ../../../iphone/libs/misc/libcurl.a; sourceTree = "<group>"; };
+		317522EF1A42B9CE00A801EA /* Security.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Security.framework; path = System/Library/Frameworks/Security.framework; sourceTree = SDKROOT; };
+		317522F11A42B9D700A801EA /* CFNetwork.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CFNetwork.framework; path = System/Library/Frameworks/CFNetwork.framework; sourceTree = SDKROOT; };
+		AA747D9E0F9514B9006C5449 /* network_Prefix.pch */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = network_Prefix.pch; sourceTree = SOURCE_ROOT; };
+		AACBBE490F95108600F1A2B1 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
+		B00E5F2614848A8A00481721 /* cmnetworkmgr.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = cmnetworkmgr.h; path = ../cmnetworkmgr.h; sourceTree = SOURCE_ROOT; };
+		D2AAC07E0554694100DB518D /* libnetwork.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libnetwork.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		E2767FAB18F6959000767734 /* Reachability.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Reachability.h; path = http/Reachability.h; sourceTree = "<group>"; };
+		E2767FAC18F6959000767734 /* Reachability.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = Reachability.m; path = http/Reachability.m; sourceTree = "<group>"; };
+		E4009BFF140B964400DD44AC /* cmdownloader.cpp */ = {isa = PBXFileReference; fileEncoding = 2147483673; lastKnownFileType = sourcecode.cpp.cpp; name = cmdownloader.cpp; path = ../cmdownloader.cpp; sourceTree = SOURCE_ROOT; };
+		E4009C00140B964400DD44AC /* cmdownloader.h */ = {isa = PBXFileReference; fileEncoding = 2147483673; lastKnownFileType = sourcecode.c.h; name = cmdownloader.h; path = ../cmdownloader.h; sourceTree = SOURCE_ROOT; };
+		E4009C01140B964400DD44AC /* cmhttpc.cpp */ = {isa = PBXFileReference; fileEncoding = 2147483673; lastKnownFileType = sourcecode.cpp.cpp; name = cmhttpc.cpp; path = ../cmhttpc.cpp; sourceTree = SOURCE_ROOT; };
+		E4009C02140B964400DD44AC /* cmhttpc.h */ = {isa = PBXFileReference; fileEncoding = 2147483673; lastKnownFileType = sourcecode.c.h; name = cmhttpc.h; path = ../cmhttpc.h; sourceTree = SOURCE_ROOT; };
+		E4009C03140B964400DD44AC /* cmnetwork.cpp */ = {isa = PBXFileReference; fileEncoding = 2147483673; lastKnownFileType = sourcecode.cpp.cpp; name = cmnetwork.cpp; path = ../cmnetwork.cpp; sourceTree = SOURCE_ROOT; };
+		E4009C04140B964400DD44AC /* cmnetwork.h */ = {isa = PBXFileReference; fileEncoding = 2147483673; lastKnownFileType = sourcecode.c.h; name = cmnetwork.h; path = ../cmnetwork.h; sourceTree = SOURCE_ROOT; };
+		E4009C18140B964400DD44AC /* cmnetwork_iph.mm */ = {isa = PBXFileReference; fileEncoding = 2147483673; lastKnownFileType = sourcecode.cpp.objcpp; path = cmnetwork_iph.mm; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		D2AAC07C0554694100DB518D /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				317522F21A42B9D700A801EA /* CFNetwork.framework in Frameworks */,
+				317522F01A42B9CE00A801EA /* Security.framework in Frameworks */,
+				007EE95317BA232400B53D73 /* libz.dylib in Frameworks */,
+				AACBBE4A0F95108600F1A2B1 /* Foundation.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		00A1848F17C5C2BA0072B332 /* curl */ = {
+			isa = PBXGroup;
+			children = (
+				00A1849017C5C2BA0072B332 /* curl.h */,
+				00A1849117C5C2BA0072B332 /* curlbuild.h */,
+				00A1849217C5C2BA0072B332 /* curlrules.h */,
+				00A1849317C5C2BA0072B332 /* curlver.h */,
+				00A1849417C5C2BA0072B332 /* easy.h */,
+				00A1849517C5C2BA0072B332 /* mprintf.h */,
+				00A1849617C5C2BA0072B332 /* multi.h */,
+				00A1849717C5C2BA0072B332 /* stdcheaders.h */,
+				00A1849817C5C2BA0072B332 /* typecheck-gcc.h */,
+			);
+			path = curl;
+			sourceTree = "<group>";
+		};
+		034768DFFF38A50411DB9C8B /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				D2AAC07E0554694100DB518D /* libnetwork.a */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		0867D691FE84028FC02AAC07 /* network */ = {
+			isa = PBXGroup;
+			children = (
+				007F7C1517F52805006FC2FE /* cmhttpc_iph.h */,
+				007F7C1617F52805006FC2FE /* cmhttpc_iph.mm */,
+				007EE95217BA232400B53D73 /* libz.dylib */,
+				08FB77AEFE84172EC02AAC07 /* Classes */,
+				32C88DFF0371C24200C91783 /* Other Sources */,
+				0867D69AFE84028FC02AAC07 /* Frameworks */,
+				034768DFFF38A50411DB9C8B /* Products */,
+			);
+			name = network;
+			sourceTree = "<group>";
+		};
+		0867D69AFE84028FC02AAC07 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				3136ADF81A820DA20032A410 /* libcurl.a */,
+				317522F11A42B9D700A801EA /* CFNetwork.framework */,
+				317522EF1A42B9CE00A801EA /* Security.framework */,
+				AACBBE490F95108600F1A2B1 /* Foundation.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		08FB77AEFE84172EC02AAC07 /* Classes */ = {
+			isa = PBXGroup;
+			children = (
+				E2767FAB18F6959000767734 /* Reachability.h */,
+				E2767FAC18F6959000767734 /* Reachability.m */,
+				00A1848F17C5C2BA0072B332 /* curl */,
+				00A1848C17C5AA4D0072B332 /* cmhttpc_curl.cpp */,
+				00C36B6E1495B700008B8748 /* cmnetworkmgr.cpp */,
+				B00E5F2614848A8A00481721 /* cmnetworkmgr.h */,
+				E4009BFF140B964400DD44AC /* cmdownloader.cpp */,
+				E4009C00140B964400DD44AC /* cmdownloader.h */,
+				E4009C01140B964400DD44AC /* cmhttpc.cpp */,
+				E4009C02140B964400DD44AC /* cmhttpc.h */,
+				E4009C03140B964400DD44AC /* cmnetwork.cpp */,
+				E4009C04140B964400DD44AC /* cmnetwork.h */,
+				E4009C18140B964400DD44AC /* cmnetwork_iph.mm */,
+			);
+			name = Classes;
+			sourceTree = "<group>";
+		};
+		32C88DFF0371C24200C91783 /* Other Sources */ = {
+			isa = PBXGroup;
+			children = (
+				AA747D9E0F9514B9006C5449 /* network_Prefix.pch */,
+			);
+			name = "Other Sources";
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXHeadersBuildPhase section */
+		D2AAC07A0554694100DB518D /* Headers */ = {
+			isa = PBXHeadersBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AA747D9F0F9514B9006C5449 /* network_Prefix.pch in Headers */,
+				E4009C35140B964400DD44AC /* cmdownloader.h in Headers */,
+				E4009C37140B964400DD44AC /* cmhttpc.h in Headers */,
+				E4009C39140B964400DD44AC /* cmnetwork.h in Headers */,
+				B00E5F2714848A8A00481721 /* cmnetworkmgr.h in Headers */,
+				E2767FAD18F6959000767734 /* Reachability.h in Headers */,
+				00A1849917C5C2BA0072B332 /* curl.h in Headers */,
+				00A1849A17C5C2BA0072B332 /* curlbuild.h in Headers */,
+				00A1849B17C5C2BA0072B332 /* curlrules.h in Headers */,
+				00A1849C17C5C2BA0072B332 /* curlver.h in Headers */,
+				00A1849D17C5C2BA0072B332 /* easy.h in Headers */,
+				00A1849E17C5C2BA0072B332 /* mprintf.h in Headers */,
+				00A1849F17C5C2BA0072B332 /* multi.h in Headers */,
+				00A184A017C5C2BA0072B332 /* stdcheaders.h in Headers */,
+				00A184A117C5C2BA0072B332 /* typecheck-gcc.h in Headers */,
+				007F7C1717F52805006FC2FE /* cmhttpc_iph.h in Headers */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXHeadersBuildPhase section */
+
+/* Begin PBXNativeTarget section */
+		D2AAC07D0554694100DB518D /* network */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 1DEB921E08733DC00010E9CD /* Build configuration list for PBXNativeTarget "network" */;
+			buildPhases = (
+				D2AAC07A0554694100DB518D /* Headers */,
+				D2AAC07B0554694100DB518D /* Sources */,
+				D2AAC07C0554694100DB518D /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = network;
+			productName = network;
+			productReference = D2AAC07E0554694100DB518D /* libnetwork.a */;
+			productType = "com.apple.product-type.library.static";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		0867D690FE84028FC02AAC07 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+			};
+			buildConfigurationList = 1DEB922208733DC00010E9CD /* Build configuration list for PBXProject "network" */;
+			compatibilityVersion = "Xcode 3.1";
+			developmentRegion = English;
+			hasScannedForEncodings = 1;
+			knownRegions = (
+				English,
+				Japanese,
+				French,
+				German,
+			);
+			mainGroup = 0867D691FE84028FC02AAC07 /* network */;
+			productRefGroup = 034768DFFF38A50411DB9C8B /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				D2AAC07D0554694100DB518D /* network */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		D2AAC07B0554694100DB518D /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				E4009C34140B964400DD44AC /* cmdownloader.cpp in Sources */,
+				E4009C36140B964400DD44AC /* cmhttpc.cpp in Sources */,
+				E2767FAE18F6959000767734 /* Reachability.m in Sources */,
+				E4009C38140B964400DD44AC /* cmnetwork.cpp in Sources */,
+				E4009C3D140B964400DD44AC /* cmnetwork_iph.mm in Sources */,
+				00C36B6F1495B701008B8748 /* cmnetworkmgr.cpp in Sources */,
+				00A1848D17C5AA4D0072B332 /* cmhttpc_curl.cpp in Sources */,
+				007F7C1817F52805006FC2FE /* cmhttpc_iph.mm in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		1DEB921F08733DC00010E9CD /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = YES;
+				ARCHS = "$(ARCHS_STANDARD)";
+				CODE_SIGN_IDENTITY = "";
+				COPY_PHASE_STRIP = NO;
+				DSTROOT = /tmp/network.dst;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_ENABLE_FIX_AND_CONTINUE = YES;
+				GCC_MODEL_TUNING = G5;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREFIX_HEADER = network_Prefix.pch;
+				HEADER_SEARCH_PATHS = (
+					"../../include/**",
+					"../../tools/**",
+					"../../xmlparser/**",
+					"../../release/simulator/**",
+					"#include",
+					"../../network/iphone/**",
+					"\"$(SRCROOT)\"/**",
+					"../../business_model/**",
+				);
+				INSTALL_PATH = /usr/local/lib;
+				IPHONEOS_DEPLOYMENT_TARGET = 5.1.1;
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"\"$(SRCROOT)/curl\"",
+					"\"$(SRCROOT)\"/**",
+					"\"$(SRCROOT)/../../release/general\"",
+					"\"$(SRCROOT)/openssl/include\"",
+					"$(SRCROOT)/../../../iphone/libs/misc",
+				);
+				ONLY_ACTIVE_ARCH = NO;
+				PRODUCT_NAME = network;
+				SKIP_INSTALL = YES;
+				USER_HEADER_SEARCH_PATHS = "";
+				VALID_ARCHS = "arm64 armv7";
+			};
+			name = Debug;
+		};
+		1DEB922008733DC00010E9CD /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = YES;
+				ARCHS = "$(ARCHS_STANDARD)";
+				CODE_SIGN_IDENTITY = "";
+				DSTROOT = /tmp/network.dst;
+				GCC_MODEL_TUNING = G5;
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREFIX_HEADER = network_Prefix.pch;
+				HEADER_SEARCH_PATHS = (
+					"../../include/**",
+					"../../tools/**",
+					"../../xmlparser/**",
+					"../../release/simulator/**",
+					"#include",
+					"../../network/iphone/**",
+					"\"$(SRCROOT)\"/**",
+					"../../business_model/**",
+				);
+				INSTALL_PATH = /usr/local/lib;
+				IPHONEOS_DEPLOYMENT_TARGET = 5.1.1;
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"\"$(SRCROOT)/curl\"",
+					"\"$(SRCROOT)\"/**",
+					"\"$(SRCROOT)/../../release/general\"",
+					"\"$(SRCROOT)/openssl/include\"",
+					"$(SRCROOT)/../../../iphone/libs/misc",
+				);
+				ONLY_ACTIVE_ARCH = NO;
+				PRODUCT_NAME = network;
+				SKIP_INSTALL = YES;
+				VALID_ARCHS = "arm64 armv7";
+			};
+			name = Release;
+		};
+		1DEB922308733DC00010E9CD /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = "$(ARCHS_STANDARD_32_BIT)";
+				GCC_C_LANGUAGE_STANDARD = c99;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = __IPHONE_OS__;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = (
+					"../../include/**",
+					"../../tools/**",
+					"../../xmlparser/**",
+					"../../release/simulator/**",
+					"\"$(SRCROOT)\"/**",
+				);
+				IPHONEOS_DEPLOYMENT_TARGET = 4.3;
+				LIBRARY_SEARCH_PATHS = (
+					"../../release/simulator/**",
+					"$(inherited)",
+					"\"$(SRCROOT)\"/**",
+				);
+				OTHER_LDFLAGS = "-ObjC";
+				PREBINDING = NO;
+				SDKROOT = iphoneos;
+			};
+			name = Debug;
+		};
+		1DEB922408733DC00010E9CD /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = "$(ARCHS_STANDARD_32_BIT)";
+				GCC_C_LANGUAGE_STANDARD = c99;
+				GCC_PREPROCESSOR_DEFINITIONS = __IPHONE_OS__;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = (
+					"../../include/**",
+					"../../tools/**",
+					"../../xmlparser/**",
+					"../../release/simulator/**",
+					"\"$(SRCROOT)\"/**",
+				);
+				IPHONEOS_DEPLOYMENT_TARGET = 4.3;
+				LIBRARY_SEARCH_PATHS = (
+					"../../release/simulator/**",
+					"$(inherited)",
+					"\"$(SRCROOT)\"/**",
+				);
+				OTHER_LDFLAGS = "-ObjC";
+				PREBINDING = NO;
+				SDKROOT = iphoneos;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		1DEB921E08733DC00010E9CD /* Build configuration list for PBXNativeTarget "network" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1DEB921F08733DC00010E9CD /* Debug */,
+				1DEB922008733DC00010E9CD /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		1DEB922208733DC00010E9CD /* Build configuration list for PBXProject "network" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1DEB922308733DC00010E9CD /* Debug */,
+				1DEB922408733DC00010E9CD /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 0867D690FE84028FC02AAC07 /* Project object */;
+}

@@ -1,0 +1,56 @@
+//
+//  CMClassCommentView.h
+//  MLPlayer
+//
+//  Created by wangjianbin on 15/6/14.
+//  Copyright (c) 2015年 w. All rights reserved.
+//
+
+#import <UIKit/UIKit.h>
+#import "CMCommentView.h"
+#import "cmcommon.h"
+
+class CMCLassCommentCommitMyStarsListener;
+@interface CMClassCommentView : UIView
+{
+    UIView *starView;
+    UITextField *textFieldStarLevel;
+    UITextField *textFieldStarPeople;
+    UITextField *textFieldMyStar;
+    UILabel *labelCommentCount;
+    
+    NSString* m_type;
+    char m_courseid[64];
+    TClassItem *m_commitStar;
+    TClassItem *m_CourseInfo;
+    CMCLassCommentCommitMyStarsListener *m_commitMyStarsListener;
+}
+
+@property (assign, nonatomic) NSInteger commentCount;
+@property (strong, nonatomic) NSString *starLevel;
+@property (assign, nonatomic) NSInteger starPeople;
+@property (assign, nonatomic) NSInteger myStars;
+@property (strong, nonatomic) CMCommentView *commentView;
+
+- (void)setCourseID:(const char*)courseid type:(NSString*)type;
+- (void)setClassItem:(TClassItem&)item;
+- (void)reflashCommentStar;
+
+@end
+
+class CMCLassCommentCommitMyStarsListener : public IMSimpleResultListener
+{
+    virtual void OnRequestFinish(void* UserData, int Result)
+    {
+        CMClassCommentView *classCommentView = (__bridge CMClassCommentView*)UserData;
+        [tool DisimissActivityIndicator];
+        if (Result == TResult::ESuccess || Result == TResult::ENothing)
+        {
+            [classCommentView reflashCommentStar];
+        }
+        else
+        {
+            [tool ShowError:Result];
+        }
+    }
+};

@@ -1,0 +1,867 @@
+// //////////////////////////////////////////////////////////////////////////////
+//  Copyright (c) 2009,
+//  All rights reserved.
+//  
+//  FileName:
+//  Description:
+//  Author:
+// //////////////////////////////////////////////////////////////////////////////
+
+#include "stdafx.h"
+#include "cmmyinfo.h"
+#include "tinyxml.h"
+#include "cmsession.h"
+#include "utf8ncpy.h"
+#include "cmglobal.h"
+#include "cmfileinfo.h"
+#include "cmupload.h"
+
+CMMyInfo* CMMyInfo::m_pTHIS = NULL;
+
+CMMyInfo* CMMyInfo::GetInstance() {
+	if (m_pTHIS == NULL)
+		m_pTHIS = new CMMyInfo();
+	return m_pTHIS;
+}
+
+void CMMyInfo::ClearAll(){
+	m_pTHIS->m_isFetched = false;
+}
+
+CMMyInfo::CMMyInfo() :
+		CMHandler<TDummyItem>() {
+
+    memset(&m_tagsandaliastablename, 0, 64);
+
+    m_pSession = NULL;
+
+	nLevel = 0;
+
+	nValue = 0;
+
+	nCredit = 0;
+
+	nStudycount = 0;
+
+	nPositionCourseCount=0;
+
+	nCurrentminvalue=0;
+
+	nNextvalue=0;
+
+	m_isFetched = false;
+            
+    nUndoExam = 0;
+    
+    nWrongQa = 0;
+
+    nContributeValue = 0;
+
+    nSex = 2;
+
+    snprintf(m_tablename,64,"myinfo");
+
+}
+
+CMMyInfo::~CMMyInfo() {
+}
+
+void CMMyInfo::SetListener(IMUpdateDataListener* pListener, IMSimpleResultListener* pListener2) {
+	m_pListener = pListener;
+    m_pListener2 = pListener2;
+}
+
+BOOL CMMyInfo::UpheadPhoto(const char* filename)
+{
+    if(!m_pSession)
+        m_pSession = new CMSession(this);
+    if(m_pSession->IsRunning())
+        return FALSE;
+    
+    CMList<FormData> list;
+    
+    FormData data;
+    
+    if(filename && strlen(filename) > 0)
+    {
+        data.key = CMString("pic");
+        data.value = CMString(filename);
+        data.dataType = 2;
+        list.push_back(data);
+    }
+    else
+    {
+        return FALSE;
+    }
+    
+    m_pSession->CommandPost(SERVICE_UPHEADPHTHO, "", list, SEQUENCE_NORMAL);
+    
+    return TRUE;
+}
+
+BOOL CMMyInfo::UpdatePushInfo(const char* tags, const char* uid)
+{
+    snprintf(m_tagsandaliastablename, 64, "tagsaliasinfo");
+
+    sqlite3* tagsaliasdb = CheckRootTable();
+    
+    if(tagsaliasdb)
+    {
+        //建立表
+        CreateTagsAlias(tagsaliasdb);
+    }
+    
+    
+    return     GetPushInfo(tags,uid,tagsaliasdb);
+
+}
+
+BOOL CMMyInfo::GetPushInfo(const char* tags, const char* alias, sqlite3* db)
+{
+    
+    
+    
+    if (db == NULL || strlen(m_tagsandaliastablename) == 0) {
+        return false;
+    }
+    
+    bool ret = false;
+    
+    sUid = alias;
+    sTags = tags;
+    
+    //拿到之前保存的tags和alias
+    GetPreviousTagsAndAlias(db);
+    
+    //清空数据表
+    ClearTagsAlias();
+    
+    
+    CHAR sql[1024];
+	sqlite3_stmt *stmt;
+    snprintf(sql, 1024,"INSERT INTO %s(uid,tags) VALUES (?,?)",  m_tagsandaliastablename);
+    
+	if (sqlite3_prepare_v2(db, sql, -1, &stmt, NULL) == SQLITE_OK) {
+        BindParam(stmt, 1, sUid.c_str());
+        BindParam(stmt, 2, sTags.c_str());
+        
+		if (sqlite3_step(stmt) == SQLITE_DONE) {
+            
+			ret = TRUE;
+            
+		} else {
+			CM_ERRP("exec %s failed.error:%s", sql, sqlite3_errmsg(db));
+		}
+        
+		sqlite3_finalize(stmt);
+	} else {
+		CM_ERRP("exec %s failed.error:%s", sql, sqlite3_errmsg(db));
+	}
+    if(ret)
+        GetTagsAliasCacheItems(db);
+
+	return ret;
+
+    
+    
+    
+}
+
+BOOL CMMyInfo::UpdateData() {
+
+	if(!m_pSession)
+		m_pSession = new CMSession(this);
+
+	if (IsRunning())
+		return FALSE;
+	SetPaging(FALSE);
+	char param[64];
+	param[0] = '\0';
+  //  snprintf(m_tablename,64,"myinfo");
+    
+    //不对pushinfo进行操作
+    snprintf(m_tagsandaliastablename, 64, "");
+    
+	return Request(SERVICE_PERSONALINFORMATION, param);
+}
+
+BOOL CMMyInfo::isFetched() {
+	return m_isFetched;
+}
+
+const char* CMMyInfo::GetJobnumber() const {
+
+	return sJobnumber.c_str();
+}
+
+const char* CMMyInfo::GetHeadimage() const {
+
+	return sHeadimage.c_str();
+}
+
+const char* CMMyInfo::GetFullName() const {
+
+	return sWorkname.c_str();
+}
+
+int CMMyInfo::GetSex() const {
+    return nSex;
+}
+
+const char* CMMyInfo::GetOrg() const {
+
+	return sOrg.c_str();
+}
+
+const char* CMMyInfo::GetDep() const {
+
+	return sDevelopment.c_str();
+}
+
+const char* CMMyInfo::GetPosition() const {
+	return sPosition.c_str();
+}
+
+const char* CMMyInfo::GetTitle() const {
+	return sTitle.c_str();
+}
+
+int CMMyInfo::GetLevel() const {
+	return nLevel;
+}
+
+int CMMyInfo::GetValue() const {
+	return nValue;
+}
+
+int CMMyInfo::GetCredit() const {
+	return nCredit;
+}
+
+int CMMyInfo::GetStudyrecord() const {
+	return nStudycount;
+}
+
+int CMMyInfo::GetPositionCourseCount() const {
+	return nPositionCourseCount;
+}
+
+
+int CMMyInfo::GetCurrentminvalue() const {
+	return nCurrentminvalue;
+}
+
+int CMMyInfo::GetNextvalue()const {
+	return nNextvalue;
+}
+
+const char* CMMyInfo::GetRankUrl() const {
+	return sRankurl.c_str();
+}
+
+const char* CMMyInfo::GetDetailUrl() const {
+    return sDetailurl.c_str();
+}
+
+const char* CMMyInfo::GetUid() const {
+	return sUid.c_str();
+}
+
+const char* CMMyInfo::GetTags() const {
+	return sTags.c_str();
+}
+
+int CMMyInfo::GetUndoExam() const {
+	return nUndoExam;
+}
+
+
+int CMMyInfo::GetWrongQa() const {
+	return nWrongQa;
+}
+
+BOOL CMMyInfo::SetWrongQa(int count) {
+    
+    if (count < 0)
+    {
+        return FALSE;
+    }
+    
+    nWrongQa = count;
+    
+    TDummyItem obj;
+    DoUpdate(obj);
+    
+    return TRUE;
+}
+
+void CMMyInfo::SetPositionCourseCount(int count)
+{
+    nPositionCourseCount = count;
+    TDummyItem obj;
+    DoUpdate(obj);
+}
+
+void CMMyInfo::SetStudyrecord(int count)
+{
+    nStudycount = count;
+    TDummyItem obj;
+    DoUpdate(obj);
+}
+
+BOOL CMMyInfo::CreateTagsAlias(sqlite3* db){
+    char *errorMsg;
+	char sql[512];
+
+	snprintf(sql,512,
+             "CREATE TABLE IF NOT EXISTS %s(_id INTEGER PRIMARY KEY AUTOINCREMENT,uid TEXT,tags TEXT)",
+             m_tagsandaliastablename);
+    
+	if (sqlite3_exec(db, sql, NULL, NULL, &errorMsg) == SQLITE_OK) {
+		return TRUE;
+	} else {
+		CM_ERRP("exec %s failed.error:%s", sql, errorMsg);
+		return FALSE;
+	}
+}
+
+BOOL CMMyInfo::DoCreate(sqlite3* db) {
+	char *errorMsg;
+	char sql[512];
+	snprintf(sql,512,
+			"CREATE TABLE IF NOT EXISTS %s(_id INTEGER PRIMARY KEY AUTOINCREMENT,jobnumber TEXT,headimage TEXT,fullname TEXT,organization TEXT,department TEXT,position TEXT,title TEXT,rankurl TEXT,detailurl TEXT,level INTEGER,value INTEGER,credit INTEGER,studyrecord INTEGER,positioncoursecount INTEGER,currentminvalue INTEGER,nextvalue INTEGER, undoexam INTEGER, wrongqa INTEGER, sex Integer, contributevalue INTEGER)",
+			m_tablename);
+
+	if (sqlite3_exec(db, sql, NULL, NULL, &errorMsg) == SQLITE_OK) {
+		return TRUE;
+	} else {
+		CM_ERRP("exec %s failed.error:%s", sql, errorMsg);
+		return FALSE;
+	}
+}
+
+void CMMyInfo::OnSessionCmd(unsigned int nCmdID, unsigned int nCode, TiXmlDocument* pDoc) {
+	int result = TResult::ENothing;
+
+    if (SERVICE_PERSONALINFORMATION == nCmdID)
+    {
+        if (nCode == MER_OK) {
+            
+            ASSERT(pDoc);
+            TiXmlElement *pItem = pDoc->RootElement();
+            
+            INT32 nErr = 0;
+            
+            if (pItem && pItem->QueryIntAttribute("errno", &nErr) == TIXML_SUCCESS) {
+                
+                pItem = pItem->FirstChildElement();
+                
+                if (nErr == 0 && pItem) {
+                    
+                    Clear();
+                    
+                    m_isFetched = TRUE;
+                    
+                    sqlite3* db = CheckTable(m_tablename);
+                    //                sqlite3* tagsaliasdb = CheckRootTable();
+                    //                if(tagsaliasdb)
+                    //                {
+                    //                    CreateTagsAlias(tagsaliasdb);
+                    //                }
+                    
+                    TDummyItem a;
+                    DoPutItem(pItem, db, a);
+                    
+                    //                GetTagsAliasItem(pItem, tagsaliasdb, a);
+                    
+                    pItem = pItem->NextSiblingElement();
+                    
+                    
+                    result = TResult::ESuccess;
+                }
+            }
+            
+            else {
+                CM_ERR("CMMyInfo OnSessionCmd not ok");
+            }
+            
+        } else if(nCode == MERN_INITIALIZE)
+        {
+            result = TResult::ENetDisconnect;
+        }
+        
+        if (m_pListener) {
+            m_pListener->OnUpdateDataFinish(m_UserData, result);
+        }
+    }
+    else if (SERVICE_UPHEADPHTHO == nCmdID)
+    {
+        if (nCode == MER_OK) {
+            TiXmlElement *pItem = pDoc->RootElement();
+            
+            int nErr = TResult::EUnknownError;
+            
+            pItem->QueryIntAttribute("errno", &nErr);
+            if (nErr == TResult::ESuccess)
+            {
+//                const CHAR* urlStr = NULL;
+//                
+//                if(!pItem->NoChildren())
+//                {
+//                    
+//                    TiXmlElement* psonItem = pItem->FirstChildElement("item");
+//                    
+//                    urlStr = psonItem->Attribute("url");
+//                    if(urlStr){
+//                        sHeadimage = urlStr;
+//                    }
+//                }
+                result = TResult::ESuccess;
+            }
+            else
+                result = TResult::EUnknownError;
+        }
+        else
+            result = ResultHandle(nCode);
+        
+        m_pListener2->OnRequestFinish(this->m_UserData, result);
+    }
+}
+
+BOOL CMMyInfo::DoPutItem(TiXmlElement* pItem, sqlite3* db, TDummyItem& item) {
+	BOOL ret = FALSE;
+	const CHAR* pStr = NULL;
+	 pStr= pItem->Attribute("jobnumber");
+
+	if (pStr)
+        sJobnumber = pStr;
+
+	pStr = pItem->Attribute("headimage");
+	if (pStr)
+        sHeadimage = pStr;
+
+	pStr = pItem->Attribute("fullname");
+	if (pStr)
+        sWorkname = pStr;
+
+	pStr = pItem->Attribute("organization");
+	if (pStr)
+        sOrg = pStr;
+
+	pStr = pItem->Attribute("department");
+	if (pStr)
+        sDevelopment = pStr;
+
+	pStr = pItem->Attribute("position");
+	if (pStr)
+        sPosition = pStr;
+
+	pStr = pItem->Attribute("title");
+	if (pStr)
+        sTitle = pStr;
+
+	pStr = pItem->Attribute("rankurl");
+	if (pStr)
+        sRankurl = pStr;
+    
+	pStr = pItem->Attribute("detailurl");
+	if (pStr)
+        sDetailurl = pStr;
+    
+    pItem->QueryIntAttribute("sex",&nSex);
+
+	pItem->QueryIntAttribute("level", &nLevel);
+    
+	pItem->QueryIntAttribute("value", &nValue);
+
+	pItem->QueryIntAttribute("credit", &nCredit);
+
+    pItem->QueryIntAttribute("studyrecord", &nStudycount);
+
+    pItem->QueryIntAttribute("positioncoursecount", &nPositionCourseCount);
+
+    pItem->QueryIntAttribute("currentminvalue", &nCurrentminvalue);
+
+    pItem->QueryIntAttribute("nextvalue", &nNextvalue);
+    
+    pItem->QueryIntAttribute("undoexam", &nUndoExam);
+
+    
+    pItem->QueryIntAttribute("wrongqa", &nWrongQa);
+
+    pItem->QueryIntAttribute("contributevalue",&nContributeValue);
+
+	if (strcmp(m_tablename, "") == 0) {
+		return TRUE;
+	}
+    
+
+	CHAR sql[1024];
+	sqlite3_stmt *stmt;
+	snprintf(sql,1024,
+			"INSERT INTO %s(jobnumber,headimage,fullname,organization,department,position,title,rankurl,detailurl,level,value,credit,studyrecord,positioncoursecount,currentminvalue,nextvalue,undoexam,wrongqa,sex,contributevalue) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+			m_tablename);
+    
+
+	if (sqlite3_prepare_v2(db, sql, -1, &stmt, NULL) == SQLITE_OK) {
+
+		BindParam(stmt, 1, sJobnumber.c_str());
+		BindParam(stmt, 2, sHeadimage.c_str());
+		BindParam(stmt, 3, sWorkname.c_str());
+		BindParam(stmt, 4, sOrg.c_str());
+		BindParam(stmt, 5, sDevelopment.c_str());
+		BindParam(stmt, 6, sPosition.c_str());
+		BindParam(stmt, 7, sTitle.c_str());
+		BindParam(stmt, 8, sRankurl.c_str());
+		BindParam(stmt, 9, sDetailurl.c_str());
+
+		BindParam(stmt, 10, nLevel);
+		BindParam(stmt, 11, nValue);
+		BindParam(stmt, 12, nCredit);
+		BindParam(stmt, 13, nStudycount);
+        
+        BindParam(stmt, 14, nPositionCourseCount);
+        BindParam(stmt, 15, nCurrentminvalue);
+	    BindParam(stmt, 16, nNextvalue);
+        BindParam(stmt, 17, nUndoExam);
+        BindParam(stmt, 18, nWrongQa);
+        BindParam(stmt, 19, nSex);
+        BindParam(stmt,20,nContributeValue);
+
+
+		if (sqlite3_step(stmt) == SQLITE_DONE) {
+
+			ret = TRUE;
+		} else {
+			CM_ERRP("exec %s failed.error:%s", sql, sqlite3_errmsg(db));
+		}
+
+		sqlite3_finalize(stmt);
+	} else {
+		CM_ERRP("exec %s failed.error:%s", sql, sqlite3_errmsg(db));
+	}
+
+	return ret;
+}
+
+BOOL CMMyInfo::DoRefresh(TDummyItem& obj) {
+	return false;
+}
+
+/**
+ *
+ *	@param	每次登录判断tags，alias是否有更新
+ *
+ *	@return	BOOL
+ */
+BOOL CMMyInfo::GetPreviousTagsAndAlias(sqlite3* db){
+    BOOL ret = FALSE;
+ 
+    if(strlen(m_tagsandaliastablename)==0)
+        return FALSE;
+    
+    if(strlen(sPreviousUid.c_str())==0 || strlen(sPreviousTags.c_str())==0)
+        return FALSE;
+    
+    sqlite3_stmt *stmt;
+    CHAR sql[1024];
+    sql[0] = '\0';
+    
+    m_mutex.Lock();
+
+        snprintf(sql,1024,"SELECT uid, tags FROM %s", m_tagsandaliastablename);
+
+        if (sqlite3_prepare_v2(db, sql, -1, &stmt, NULL) == SQLITE_OK)
+        {
+         
+            if (sqlite3_step(stmt) == SQLITE_ROW)
+            {
+                sPreviousUid = (const char*) sqlite3_column_text(stmt, 0);
+                
+                sPreviousTags = (const char*)sqlite3_column_text(stmt, 1);
+                
+                ret = TRUE;
+            }
+            else
+            {
+                
+                CM_ERRP("sqlite3_prepare_v2 %s failed.error:%s, %i", sql, sqlite3_errmsg(db),sqlite3_step(stmt));
+            }
+            
+            sqlite3_finalize(stmt);
+        }
+        else
+        {
+            CM_ERRP("sqlite3_step %s failed.error:%s", sql, sqlite3_errmsg(db));
+        }
+        m_mutex.UnLock();
+    
+	return ret;
+}
+
+BOOL CMMyInfo::GetTagsAliasItem(TiXmlElement *pItem, sqlite3 *db, TDummyItem &item){
+    BOOL ret = FALSE;
+	const CHAR* pStr = NULL;
+    pStr = pItem->Attribute("uid");
+	if (pStr)
+        sUid = pStr;
+    
+    pStr = pItem->Attribute("tags");
+	if (pStr){
+        sTags = pStr;
+    }
+   
+    if (strcmp(m_tagsandaliastablename, "") == 0) {
+		return TRUE;
+	}
+    
+    //拿到之前保存的tags和alias
+    GetPreviousTagsAndAlias(db);
+    
+    //清空数据表
+    ClearTagsAlias();
+    
+	CHAR sql[1024];
+	sqlite3_stmt *stmt;
+    snprintf(sql, 1024,"INSERT INTO %s(uid,tags) VALUES (?,?)",  m_tagsandaliastablename);
+    
+	if (sqlite3_prepare_v2(db, sql, -1, &stmt, NULL) == SQLITE_OK) {
+        BindParam(stmt, 1, sUid.c_str());
+        BindParam(stmt, 2, sTags.c_str());
+        
+		if (sqlite3_step(stmt) == SQLITE_DONE) {
+            
+			ret = TRUE;
+            
+		} else {
+			CM_ERRP("exec %s failed.error:%s", sql, sqlite3_errmsg(db));
+		}
+   
+		sqlite3_finalize(stmt);
+	} else {
+		CM_ERRP("exec %s failed.error:%s", sql, sqlite3_errmsg(db));
+	}
+    if(ret)
+        GetTagsAliasCacheItems(db);
+    
+	return ret;
+
+}
+
+BOOL CMMyInfo::ClearTagsAlias(){
+    BOOL ret = FALSE;
+
+    if(strlen(m_tagsandaliastablename) == 0)
+         return ret;
+
+    sqlite3* db = CheckRootTable();
+
+    if(db != NULL)
+    {
+        
+        CHAR sql[1024];
+        sql[0] = '\0';
+        char* errorMsg;
+        
+        snprintf(sql, 1024,"DELETE FROM %s", m_tagsandaliastablename);
+        
+        if (sqlite3_exec(db, sql, NULL, NULL, &errorMsg) != SQLITE_OK)
+        {
+            CM_ERRP("exec %s failed.error:%s", sql, errorMsg);
+        }
+        else
+        {
+            ret = TRUE;
+        }
+        
+    }
+    return ret;
+}
+
+
+BOOL CMMyInfo::GetTagsAliasCacheItems(sqlite3 *db){
+    BOOL ret = FALSE;
+	sqlite3_stmt *stmt;
+	CHAR sql[1024];
+	sql[0] = '\0';
+    
+	snprintf(sql,1024,"SELECT uid,tags from %s order by _id ASC", m_tagsandaliastablename);
+
+	if (sqlite3_prepare_v2(db, sql, -1, &stmt, NULL) == SQLITE_OK) {
+        
+		m_mutex.Lock();
+        
+		if (sqlite3_step(stmt) == SQLITE_ROW) {
+		
+            sUid = (const char*) sqlite3_column_text(stmt, 0);
+            
+            sTags = (const char*)sqlite3_column_text(stmt, 1);
+            
+            ret = TRUE;
+		}
+        
+		m_mutex.UnLock();
+		sqlite3_finalize(stmt);
+        
+	}
+    
+	return ret;
+}
+
+BOOL CMMyInfo::CompareTags(){
+    BOOL ret = FALSE;
+    if (strcmp(sPreviousTags.c_str(), sTags.c_str()) == 0) {
+        ret = TRUE;
+        return ret;
+    }
+    return ret;
+}
+
+BOOL CMMyInfo::CompareAlias(){
+    BOOL ret = FALSE;
+    if (strcmp(sPreviousUid.c_str(), sUid.c_str()) == 0) {
+        ret = TRUE;
+        return ret;
+    }
+    return ret;
+}
+
+BOOL CMMyInfo::DoUpdate(const TDummyItem& obj) {
+    
+    BOOL ret = FALSE;
+    
+    sqlite3* db = CheckTable(m_tablename);
+    
+    if (db)
+    {
+        m_mutex.Lock();
+        
+        CHAR sql[1024];
+        sqlite3_stmt *stmt;
+        snprintf(sql,1024, "UPDATE %s SET jobnumber=?, headimage=?, fullname=?, organization=?, department=?, position=?, title=?, rankurl=?, detailurl=?, level=?, value=?, credit=?, studyrecord=?, positioncoursecount=?, currentminvalue=?, nextvalue=?, undoexam=?, wrongqa=?,contributevalue=?", m_tablename);
+        
+        if (sqlite3_prepare_v2(db, sql, -1, &stmt, NULL) == SQLITE_OK)
+        {
+            BindParam(stmt, 1, sJobnumber.c_str());
+            BindParam(stmt, 2, sHeadimage.c_str());
+            BindParam(stmt, 3, sWorkname.c_str());
+            BindParam(stmt, 4, sOrg.c_str());
+            BindParam(stmt, 5, sDevelopment.c_str());
+            BindParam(stmt, 6, sPosition.c_str());
+            BindParam(stmt, 7, sTitle.c_str());
+            BindParam(stmt, 8, sRankurl.c_str());
+            BindParam(stmt, 9, sDetailurl.c_str());
+            
+            BindParam(stmt, 10, nLevel);
+            BindParam(stmt, 11, nValue);
+            BindParam(stmt, 12, nCredit);
+            BindParam(stmt, 13, nStudycount);
+            
+            BindParam(stmt, 14, nPositionCourseCount);
+            BindParam(stmt, 15, nCurrentminvalue);
+            BindParam(stmt, 16, nNextvalue);
+            BindParam(stmt, 17, nUndoExam);
+            BindParam(stmt, 18, nWrongQa);
+            
+            BindParam(stmt,19,nContributeValue);
+            
+            if (sqlite3_step(stmt) == SQLITE_DONE)
+            {
+                ret = TRUE;
+            }
+            else
+            {
+                CM_ERRP("exec %s failed.error:%s", sql, sqlite3_errmsg(db));
+            }
+        }
+        else
+        {
+            CM_ERRP("exec %s failed.error:%s", sql, sqlite3_errmsg(db));
+        }
+        
+        m_mutex.UnLock();
+        
+        sqlite3_finalize(stmt);
+    }
+	return ret;
+}
+
+BOOL CMMyInfo::DoGetCacheItems(sqlite3* db) {
+    
+	BOOL ret = FALSE;
+	sqlite3_stmt *stmt;
+	CHAR sql[1024];
+	sql[0] = '\0';
+
+	snprintf(sql,1024,
+			"SELECT * from %s order by _id ASC",
+			m_tablename);
+	if (m_bPaging) {
+		snprintf(sql, 1024,"%s limit %d offset %d", sql, m_nPageSize,
+				(m_nPageNo - 1) * m_nPageSize);
+
+	}
+
+	if (sqlite3_prepare_v2(db, sql, -1, &stmt, NULL) == SQLITE_OK) {
+		if (!m_bPaging || m_nPageNo == 1) {
+			//如果是第一页，清空表
+		   m_lstItem->clear();
+		}
+
+		m_mutex.Lock();
+
+		if (sqlite3_step(stmt) == SQLITE_ROW) {
+
+            sJobnumber = (const char*) sqlite3_column_text(stmt, 1);
+
+            sHeadimage = (const char*) sqlite3_column_text(stmt, 2);
+
+            sWorkname = (const char*) sqlite3_column_text(stmt, 3);
+
+            sOrg = (const char*) sqlite3_column_text(stmt, 4);
+
+            sDevelopment = (const char*) sqlite3_column_text(stmt, 5);
+
+            sPosition = (const char*) sqlite3_column_text(stmt, 6);
+
+            sTitle = (const char*) sqlite3_column_text(stmt, 7);
+
+            sRankurl = (const char*) sqlite3_column_text(stmt, 8);
+            
+            sDetailurl = (const char*) sqlite3_column_text(stmt, 9);
+
+			nLevel = sqlite3_column_int(stmt, 10);
+
+            nValue = sqlite3_column_int(stmt, 11);
+
+			nCredit = sqlite3_column_int(stmt, 12);
+
+			nStudycount = sqlite3_column_int(stmt, 13);
+
+            nPositionCourseCount= sqlite3_column_int(stmt, 14);
+					
+            nCurrentminvalue= sqlite3_column_int(stmt, 15);
+					
+            nNextvalue= sqlite3_column_int(stmt, 16);
+            
+            nWrongQa= sqlite3_column_int(stmt, 17);
+            
+            nWrongQa= sqlite3_column_int(stmt, 18);
+            
+            nSex = sqlite3_column_int(stmt, 19);
+            
+            nContributeValue = sqlite3_column_int(stmt,20);
+
+            ret = TRUE;
+			m_isFetched = TRUE;
+		}
+
+		m_mutex.UnLock();
+		sqlite3_finalize(stmt);
+
+
+	}
+
+	return ret;
+}
+

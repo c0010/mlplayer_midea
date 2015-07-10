@@ -1,0 +1,11 @@
+//
+// Prefix header for all source files of the 'MLPlayer' target in the 'MLPlayer' project
+//
+
+#ifdef __OBJC__
+    #import <Foundation/Foundation.h>
+    #import <UIKit/UIKit.h>
+    #import "tool.h"
+    #import "UIView+Frame.h"
+#endif
+//#include "stdafx.h"

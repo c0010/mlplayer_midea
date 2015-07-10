@@ -1,0 +1,19 @@
+//
+//  CMExamRankViewController.h
+//  MLPlayer
+//
+//  Created by wmgwd on 13-11-13.
+//  Copyright (c) 2013年 w. All rights reserved.
+//
+
+#import <UIKit/UIKit.h>
+#import "CMViewController.h"
+#import "CMWebView.h"
+@interface CMExamRankViewController : CMViewController
+{
+    CMWebView *m_pWebView;
+}
+
+@property (nonatomic, strong) NSString *strURL;
+
+@end

@@ -1,0 +1,538 @@
+#include "stdafx.h"
+#include "cmstring.h"
+#include<stdio.h>
+#include<stdlib.h>
+#if defined(PLAT_WINCE)
+    #include<tchar.h>
+#elif defined(PLAT_IOS)
+#import<string>
+#elif defined(PLAT_AND)
+//#include<wchar.h>
+#endif
+
+CMString::CMString()
+:m_cdata(NULL)
+ {
+	 m_sData = new WCHAR[1];
+	 m_sData[0] = L'\0';
+}
+CMString::~CMString()
+{
+	if(m_sData)
+	{
+		delete[] m_sData;
+		m_sData = NULL;
+	}
+	if(m_cdata)
+	{
+	    delete m_cdata;
+	    m_cdata = NULL;
+	}
+}
+CMString::CMString(const CHAR*s)
+{
+	m_cdata = NULL;
+	m_sData = NULL;
+    if(s!=NULL)
+    {
+        INT32 len=strlen(s)+1;
+        m_sData = new WCHAR[len];
+        ASSERT(m_sData!=NULL);
+        memset(m_sData,0,len*sizeof(WCHAR));
+        ConvertUtf8ToUnicode(s,m_sData,len);
+    }
+    if(!m_sData)
+	{
+		 m_sData = new WCHAR[1];
+		 m_sData[0] = L'\0';
+	}
+ }
+CMString::CMString(const CHAR* s, UINT32 nLen)
+{
+	m_cdata = NULL;
+	m_sData = NULL;
+    if(s!=NULL && strlen(s) >= nLen)
+    {
+        INT32 len = nLen + 1;
+        m_sData = new WCHAR[nLen + 1];
+        ASSERT(m_sData != NULL);
+        memset(m_sData, 0, len * sizeof(WCHAR));
+        ConvertUtf8ToUnicode(s, nLen, m_sData, len);
+    }
+	if(!m_sData)
+	{
+		 m_sData = new WCHAR[1];
+		 m_sData[0] = L'\0';
+	}
+
+}
+
+CMString::CMString(const WCHAR *s)
+{
+	m_cdata = NULL;
+	m_sData = NULL;
+	INT32 len = 0;
+    if(s!=NULL)
+		len=wcslen(s);
+    m_sData=new WCHAR[len+1];
+    ASSERT(m_sData!=NULL);
+    if(len>0)
+        wcscpy(m_sData,s);
+    else
+        m_sData[0]=L'\0';
+
+
+}
+CMString::CMString(const CMString& str)
+{
+	m_cdata = NULL;
+	INT32 len=str.GetLength();
+    m_sData=new WCHAR[len+1];
+    ASSERT(m_sData!=NULL);
+     if(len>0)
+         wcscpy(m_sData,str.m_sData);
+     else
+         m_sData[0]=L'\0';
+
+}
+CMString& CMString ::operator=(CHAR *s)
+{
+   if(m_sData)
+    {
+        delete []m_sData;
+        m_sData = NULL;
+    }
+    if(s!=NULL)
+    {
+        INT32 len=strlen(s)+1;
+        m_sData = new WCHAR[len];
+        ASSERT(m_sData!=NULL);
+        memset(m_sData,0,len*sizeof(WCHAR));
+        ConvertUtf8ToUnicode(s,m_sData,len);
+    }
+    return *this;
+ }
+CMString& CMString::operator=(const CMString&str)
+{
+    if(this!=&str)
+    {
+        if(m_sData)
+        {
+            delete []m_sData;
+            m_sData = NULL;
+        }
+        INT32 len=str.GetLength();
+        m_sData=new WCHAR[len+1];
+        ASSERT(m_sData!=NULL);
+        if(len>0)
+            wcscpy(m_sData,str.m_sData);
+        else
+            m_sData[0]=L'\0';
+    }
+    return *this;
+}
+CMString& CMString::operator=(const WCHAR *s)
+{
+    if(m_sData)
+    {
+        delete []m_sData;
+        m_sData = NULL;
+    }
+	INT32 len = 0;
+    if(s!=NULL)
+		len = wcslen(s);
+    m_sData=new WCHAR[len+1];
+    ASSERT(m_sData!=NULL);
+    if(len>0)
+        wcscpy(m_sData,s);
+    else
+        m_sData[0]=L'\0';
+
+    return *this;
+ 
+}
+CMString  CMString::operator+(const CMString&str)const
+{
+    if(str.GetLength()==0)
+        return *this;
+    WCHAR *temp=NULL;
+    INT32 len=str.GetLength()+GetLength();
+    temp = new WCHAR[len+1];
+    ASSERT(temp!=NULL);
+    if(len>0)
+    {
+        wcscpy(temp,m_sData);
+        wcscat(temp,str.m_sData);
+    }
+    else
+        temp[0]=L'\0';
+    CMString stv = temp;
+    delete []temp;
+    temp = NULL;
+    return stv;
+}
+CMString  CMString::operator+(const WCHAR *s)const
+{
+    if(s==NULL)
+        return *this;
+    WCHAR *temp=NULL;
+    int len = wcslen(s)+GetLength();
+    temp = new WCHAR[len+1];
+    ASSERT(temp!=NULL);
+    if(len>0)
+    {
+        wcscpy(temp,m_sData);
+        wcscat(temp,s);
+    }
+    else
+        temp[0]=L'\0';
+    CMString stv = temp;
+    delete []temp;
+    temp = NULL;
+    return stv;
+}
+/*CMString& CMString::operator +(INT32 size)
+{
+    if(size==0)
+        return *this;
+    WCHAR *temp=NULL;
+    INT32 len=GetLength()-size+1;
+    if(len>0)
+    {
+        temp = new WCHAR[len];
+        temp[0] = L'\0';
+        wcscpy(temp, &m_sData[size]);
+        delete[]m_sData;
+        m_sData=temp;
+    }
+    else
+    {
+        delete []m_sData;
+        m_sData = NULL;
+     }
+    return *this;
+}*/
+CMString& CMString:: operator+=(const CMString&str)
+{
+    if(str.GetLength()==0)
+        return *this;
+    WCHAR *temp=NULL;
+    INT32 len=str.GetLength()+GetLength();
+    temp = new WCHAR[len+1];
+    ASSERT(temp!=NULL);
+    if(len>0)
+    {
+        wcscpy(temp,m_sData);
+        wcscat(temp,str.m_sData);
+        delete []m_sData;
+        m_sData = temp;
+    }
+    else
+        m_sData[0]=L'\0';
+    return *this;
+}
+CMString& CMString::operator+=(const WCHAR*s)
+{
+    if(s==NULL)
+        return *this;
+    WCHAR *temp=NULL;
+    int len = wcslen(s)+GetLength();
+    temp = new WCHAR[len+1];
+    ASSERT(temp!=NULL);
+    if(len>0)
+    {
+        wcscpy(temp,m_sData);
+        wcscat(temp,s);
+        delete []m_sData;
+        m_sData = temp;
+    }
+    else
+        m_sData[0]=L'\0';
+    return *this;
+}
+WCHAR CMString::operator [](INT32 index)
+{
+	if (index >=0 && index < this->GetLength())
+		return m_sData[index];
+    else
+        return 0;
+}
+INT32  CMString ::GetLength()const
+{
+    if(m_sData)
+        return wcslen(m_sData);
+    return 0;
+}
+INT32 CMString::Find(const WCHAR *s, INT32 start) const
+{
+    //WCHAR*pResult=NULL;
+    //pResult=wstrstr(m_sData,s);
+    //if(!pResult)
+    //  return -1;
+    //return INT32(pResult-m_sData);
+    if(s==NULL)
+        return -1;
+    INT32 nDestLen=wcslen(s);
+    for(INT32 i=start;i<=GetLength()-nDestLen;i++)
+    {
+        for(INT32 j=0;j<nDestLen;j++)
+        { 
+           if(m_sData[i+j]==s[j])
+           {
+               if(j==nDestLen-1)
+                   return i;
+               continue;
+           }
+           else
+               break;
+        }
+    }
+    return -1;    
+}
+INT32 CMString:: ReverseFind(const WCHAR*s) const
+{
+    if(s==NULL)
+        return -1;
+    INT32 len=wcslen(s);
+    for(INT32 i=GetLength()-len;i>=0;i--)
+    {
+        for(INT32 j=0;j<len;j++)
+        {
+            if(s[j]==m_sData[i+j]) 
+            {
+                if(j==len-1)
+                    return i;
+                continue;
+            }
+            else
+                break;
+        }
+    }
+    return -1;
+ }
+VOID CMString::Empty()
+{
+	if(m_sData)
+	{
+		delete[]m_sData;
+		m_sData = new WCHAR[1];
+		m_sData[0] = L'\0';
+	}
+}
+
+CMString  CMString:: Left(INT32 count)const
+{
+    if(count>GetLength())
+        count=GetLength();
+    if(count<0)
+        count=0;
+    WCHAR * temp;
+    temp = new WCHAR[count+1];
+    ASSERT(temp!=NULL);
+    memcpy(temp, m_sData,count*sizeof(WCHAR));
+    temp[count]=L'\0';
+    CMString str=temp;
+    delete []temp;
+    return str;
+}
+CMString  CMString:: Right(INT32 count)const
+{
+    if(count>GetLength())
+        count=GetLength();
+    if(count<0)
+        count=0;
+    wchar_t * temp;
+    temp = new WCHAR[count+1];
+    ASSERT(temp!=NULL);
+    memcpy(temp, &m_sData[GetLength()-count],count*sizeof(WCHAR));
+    temp[count]=L'\0';
+    CMString str=temp;
+    delete []temp;
+    return str; 
+   
+}
+CMString  CMString::Mid(INT32 start)const
+{
+    return this->Right(GetLength()-start);    
+}
+CMString  CMString::Mid(INT32 start,INT32 count)const
+{
+    return this->Mid(start).Left(count);        
+}
+CMString& CMString::MakeUpper()
+{
+	for(int i=0; i<this->GetLength();i++)
+	{
+		if(m_sData[i]>=97 && m_sData[i]<=123)
+			m_sData[i]-=32;
+	}
+	return *this;
+/*    #ifdef PLAT_WINCE
+        _wcsupr(m_sData);
+    #else
+        TPtr ptr((TUint16*)m_sData,GetLength());
+        ptr.UpperCase();
+    #endif
+     return *this;   */ 
+}
+CMString& CMString::MakeLower()
+{
+	for(int i=0; i<this->GetLength();i++)
+	{
+		if(m_sData[i]>=65 && m_sData[i]<=91)
+			m_sData[i]+=32;
+	}
+	return *this;
+//#ifdef PLAT_WINCE
+//    _wcslwr(m_sData);
+//#else
+//	TBuf<128> s
+//		s.Copy((TUint16*)m_sData,GetLength())
+//    TPtr ptr((TUint16*)m_sData,GetLength());
+//    ptr.LowerCase();
+//#endif
+//    return *this;
+}
+CMString& CMString::TrimRight(WCHAR ch)
+{
+    int nIndex=GetLength()-1;
+    for(;nIndex>=0;nIndex--)
+    {
+        if(m_sData[nIndex]==ch)
+            continue;
+        else
+            break;
+    }
+    if(nIndex<GetLength()-1)
+        this->Left(nIndex+1);
+    return *this;
+ }
+CMString& CMString::TrimLeft(WCHAR ch)
+{
+    int nIndex=0;
+    for(;nIndex<GetLength();nIndex++)
+    {
+        if(m_sData[nIndex]==ch)
+            continue;
+        else
+            break;
+    }
+    if(nIndex>0)
+    {
+        WCHAR *temp=NULL;
+        INT32 len=GetLength()-nIndex+1;
+        if(len>0)
+        {
+            temp = new WCHAR[len];
+            temp[0] = L'\0';
+            wcscpy(temp, &m_sData[nIndex]);
+            delete[]m_sData;
+            m_sData=temp;
+        }
+        else
+        {
+            delete []m_sData;
+            m_sData = NULL;
+         }
+    }
+    return *this;
+}
+CMString& CMString::Trim(WCHAR ch)
+{
+    return TrimLeft(ch).TrimRight(ch);      
+}
+//区分大小写
+BOOL CMString::operator==(const CMString&str)const
+{
+    if(CompareS(*this,str)==0)
+        return TRUE;
+    return FALSE;       
+}
+
+BOOL CMString::operator==(const WCHAR* str) const
+{
+    return (CompareS(m_sData, str) == 0);
+}
+
+//区分大小写
+BOOL CMString::operator!=(const CMString&str)const
+{
+    if(CompareS(*this,str)!=0)
+        return TRUE;
+    return FALSE;
+}
+
+BOOL CMString::operator!=(const WCHAR* str) const
+{
+    return (CompareS(m_sData, str) != 0);
+}
+
+//区分大小写
+BOOL CMString::operator>(const CMString&str)const
+{
+    if(CompareS(*this,str)>0)
+        return TRUE;
+    return FALSE;
+}
+//区分大小写
+BOOL CMString::operator>=(const CMString&str)const
+{
+    if(CompareS(*this,str)>=0)
+        return TRUE;
+    return FALSE;
+}
+//区分大小写
+BOOL CMString::operator<(const CMString&str)const
+{
+    if(CompareS(*this,str)<0)
+        return TRUE;
+    return FALSE;
+}
+BOOL CMString::operator<=(const CMString&str)const
+{
+    if(CompareS(*this,str)<=0)
+        return TRUE;
+    return FALSE;
+}
+INT32 Compare(const CMString& astr,const CMString&bstr)//不区分大小写
+{
+#ifdef PLAT_WINCE
+    return _wcsicmp(astr,bstr);
+#else
+    return wcscmp(astr,bstr);//暂时没找到相关函数，wcscmp是区分大小写的
+#endif    
+}
+INT32 CompareS(const CMString& astr,const CMString&bstr)//区分大小写
+{
+    return wcscmp(astr,bstr);
+}
+BOOL CMString::IsEmpty()const
+{
+    if(GetLength()>0)
+        return FALSE;
+    else
+        return TRUE;
+}
+CMString::operator const CHAR*()
+{
+    if(m_cdata)
+    {
+        delete []m_cdata;
+        m_cdata = NULL;
+    }
+    if(m_sData)
+    {
+       INT32 len = GetLength();
+       m_cdata = new CHAR[len*3+1];
+       ASSERT(m_cdata!=NULL);
+       memset(m_cdata,0,len*3+1);
+       ConvertUnicodeToUtf8(m_sData,m_cdata,len*3+1);
+    }
+	if(!m_cdata)
+	{
+		 m_cdata = new CHAR[1];
+		 m_cdata[0] = '\0';
+	}
+    return (const CHAR*)m_cdata;
+          
+}

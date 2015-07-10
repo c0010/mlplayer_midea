@@ -1,0 +1,350 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 45;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		313B4B6419B4523000DBA274 /* avplayer.c in Sources */ = {isa = PBXBuildFile; fileRef = 313B4B6219B4523000DBA274 /* avplayer.c */; };
+		313B4B6519B4523000DBA274 /* avplayer.h in Headers */ = {isa = PBXBuildFile; fileRef = 313B4B6319B4523000DBA274 /* avplayer.h */; };
+		AA747D9F0F9514B9006C5449 /* player_Prefix.pch in Headers */ = {isa = PBXBuildFile; fileRef = AA747D9E0F9514B9006C5449 /* player_Prefix.pch */; };
+		AACBBE4A0F95108600F1A2B1 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AACBBE490F95108600F1A2B1 /* Foundation.framework */; };
+		E2655E9B18C84EBD0034DAF7 /* libz.1.2.5.dylib in Headers */ = {isa = PBXBuildFile; fileRef = E2655E9918C84C150034DAF7 /* libz.1.2.5.dylib */; };
+		E2655E9C18C84FA50034DAF7 /* libz.1.2.5.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = E2655E9918C84C150034DAF7 /* libz.1.2.5.dylib */; };
+		E4CD62A5140B34E800CE1162 /* cmplayerutility.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E4CD619C140B34E800CE1162 /* cmplayerutility.cpp */; };
+		E4CD62A6140B34E800CE1162 /* cmplayerutility.h in Headers */ = {isa = PBXBuildFile; fileRef = E4CD619D140B34E800CE1162 /* cmplayerutility.h */; };
+		E4CD6389140B34E800CE1162 /* mplayerinterface.h in Headers */ = {isa = PBXBuildFile; fileRef = E4CD6287140B34E800CE1162 /* mplayerinterface.h */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		313B4B6219B4523000DBA274 /* avplayer.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = avplayer.c; path = ../avplayer.c; sourceTree = "<group>"; };
+		313B4B6319B4523000DBA274 /* avplayer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = avplayer.h; path = ../avplayer.h; sourceTree = "<group>"; };
+		AA747D9E0F9514B9006C5449 /* player_Prefix.pch */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = player_Prefix.pch; sourceTree = SOURCE_ROOT; };
+		AACBBE490F95108600F1A2B1 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
+		D2AAC07E0554694100DB518D /* libplayer.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libplayer.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		E2655E9918C84C150034DAF7 /* libz.1.2.5.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libz.1.2.5.dylib; path = usr/lib/libz.1.2.5.dylib; sourceTree = SDKROOT; };
+		E4CD619C140B34E800CE1162 /* cmplayerutility.cpp */ = {isa = PBXFileReference; fileEncoding = 2147483673; lastKnownFileType = sourcecode.cpp.cpp; name = cmplayerutility.cpp; path = ../cmplayerutility.cpp; sourceTree = SOURCE_ROOT; };
+		E4CD619D140B34E800CE1162 /* cmplayerutility.h */ = {isa = PBXFileReference; fileEncoding = 2147483673; lastKnownFileType = sourcecode.c.h; name = cmplayerutility.h; path = ../cmplayerutility.h; sourceTree = SOURCE_ROOT; };
+		E4CD6287140B34E800CE1162 /* mplayerinterface.h */ = {isa = PBXFileReference; fileEncoding = 2147483673; lastKnownFileType = sourcecode.c.h; name = mplayerinterface.h; path = ../mplayerinterface.h; sourceTree = SOURCE_ROOT; };
+		E4D0216D145953F90061C635 /* player.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = player.xcodeproj; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		D2AAC07C0554694100DB518D /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				E2655E9C18C84FA50034DAF7 /* libz.1.2.5.dylib in Frameworks */,
+				AACBBE4A0F95108600F1A2B1 /* Foundation.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		034768DFFF38A50411DB9C8B /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				D2AAC07E0554694100DB518D /* libplayer.a */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		0867D691FE84028FC02AAC07 /* player */ = {
+			isa = PBXGroup;
+			children = (
+				08FB77AEFE84172EC02AAC07 /* Classes */,
+				32C88DFF0371C24200C91783 /* Other Sources */,
+				0867D69AFE84028FC02AAC07 /* Frameworks */,
+				034768DFFF38A50411DB9C8B /* Products */,
+			);
+			name = player;
+			sourceTree = "<group>";
+		};
+		0867D69AFE84028FC02AAC07 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				E2655E9918C84C150034DAF7 /* libz.1.2.5.dylib */,
+				AACBBE490F95108600F1A2B1 /* Foundation.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		08FB77AEFE84172EC02AAC07 /* Classes */ = {
+			isa = PBXGroup;
+			children = (
+				E4D01FF4145953F80061C635 /* iphone */,
+				E4CD619C140B34E800CE1162 /* cmplayerutility.cpp */,
+				E4CD619D140B34E800CE1162 /* cmplayerutility.h */,
+				E4CD6287140B34E800CE1162 /* mplayerinterface.h */,
+				313B4B6219B4523000DBA274 /* avplayer.c */,
+				313B4B6319B4523000DBA274 /* avplayer.h */,
+			);
+			name = Classes;
+			sourceTree = "<group>";
+		};
+		32C88DFF0371C24200C91783 /* Other Sources */ = {
+			isa = PBXGroup;
+			children = (
+				AA747D9E0F9514B9006C5449 /* player_Prefix.pch */,
+			);
+			name = "Other Sources";
+			sourceTree = "<group>";
+		};
+		E4D01FF4145953F80061C635 /* iphone */ = {
+			isa = PBXGroup;
+			children = (
+				E4D0216D145953F90061C635 /* player.xcodeproj */,
+			);
+			name = iphone;
+			sourceTree = "<group>";
+		};
+		E4D0216E145953F90061C635 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXHeadersBuildPhase section */
+		D2AAC07A0554694100DB518D /* Headers */ = {
+			isa = PBXHeadersBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				E2655E9B18C84EBD0034DAF7 /* libz.1.2.5.dylib in Headers */,
+				AA747D9F0F9514B9006C5449 /* player_Prefix.pch in Headers */,
+				E4CD62A6140B34E800CE1162 /* cmplayerutility.h in Headers */,
+				313B4B6519B4523000DBA274 /* avplayer.h in Headers */,
+				E4CD6389140B34E800CE1162 /* mplayerinterface.h in Headers */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXHeadersBuildPhase section */
+
+/* Begin PBXNativeTarget section */
+		D2AAC07D0554694100DB518D /* player */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 1DEB921E08733DC00010E9CD /* Build configuration list for PBXNativeTarget "player" */;
+			buildPhases = (
+				D2AAC07A0554694100DB518D /* Headers */,
+				D2AAC07B0554694100DB518D /* Sources */,
+				D2AAC07C0554694100DB518D /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = player;
+			productName = player;
+			productReference = D2AAC07E0554694100DB518D /* libplayer.a */;
+			productType = "com.apple.product-type.library.static";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		0867D690FE84028FC02AAC07 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+			};
+			buildConfigurationList = 1DEB922208733DC00010E9CD /* Build configuration list for PBXProject "player" */;
+			compatibilityVersion = "Xcode 3.1";
+			developmentRegion = English;
+			hasScannedForEncodings = 1;
+			knownRegions = (
+				English,
+				Japanese,
+				French,
+				German,
+			);
+			mainGroup = 0867D691FE84028FC02AAC07 /* player */;
+			productRefGroup = 034768DFFF38A50411DB9C8B /* Products */;
+			projectDirPath = "";
+			projectReferences = (
+				{
+					ProductGroup = E4D0216E145953F90061C635 /* Products */;
+					ProjectRef = E4D0216D145953F90061C635 /* player.xcodeproj */;
+				},
+			);
+			projectRoot = "";
+			targets = (
+				D2AAC07D0554694100DB518D /* player */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		D2AAC07B0554694100DB518D /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				E4CD62A5140B34E800CE1162 /* cmplayerutility.cpp in Sources */,
+				313B4B6419B4523000DBA274 /* avplayer.c in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		1DEB921F08733DC00010E9CD /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = "$(ARCHS_STANDARD)";
+				COPY_PHASE_STRIP = NO;
+				DSTROOT = /tmp/player.dst;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_ENABLE_FIX_AND_CONTINUE = YES;
+				GCC_MODEL_TUNING = G5;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREFIX_HEADER = player_Prefix.pch;
+				HEADER_SEARCH_PATHS = (
+					../../include,
+					../../tools,
+					../../network,
+					../../business_model,
+					../../xmlparser,
+					../../minizip,
+					../../business_model/iphone,
+					../include/SDL2,
+					../include,
+				);
+				INSTALL_PATH = /usr/local/lib;
+				IPHONEOS_DEPLOYMENT_TARGET = 5.1.1;
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"\"$(SRCROOT)/../ffmpeg/device\"",
+					"\"$(SRCROOT)/../ffmpeg/simulator\"",
+					"\"$(SRCROOT)/build/player.build/Release-iphoneos/player.build/Objects-normal/armv6\"",
+					"\"$(SRCROOT)/build/player.build/Release-iphoneos/player.build/Objects-normal/armv7\"",
+					"\"$(SRCROOT)/build/Release-iphoneos\"",
+					"\"$(SRCROOT)/ \"$(SRCROOT)/build/Release-iphonesimulator\"",
+				);
+				PRODUCT_NAME = player;
+				SKIP_INSTALL = YES;
+				STRIP_INSTALLED_PRODUCT = NO;
+				VALID_ARCHS = "arm64 armv7";
+			};
+			name = Debug;
+		};
+		1DEB922008733DC00010E9CD /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = "$(ARCHS_STANDARD)";
+				DSTROOT = /tmp/player.dst;
+				GCC_MODEL_TUNING = G5;
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREFIX_HEADER = player_Prefix.pch;
+				HEADER_SEARCH_PATHS = (
+					../../include,
+					../../tools,
+					../../network,
+					../../business_model,
+					../../xmlparser,
+					../../minizip,
+					../../business_model/iphone,
+					../include/SDL2,
+					../include,
+				);
+				INSTALL_PATH = /usr/local/lib;
+				IPHONEOS_DEPLOYMENT_TARGET = 5.1.1;
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"\"$(SRCROOT)/../ffmpeg/device\"",
+					"\"$(SRCROOT)/../ffmpeg/simulator\"",
+					"\"$(SRCROOT)/build/player.build/Release-iphoneos/player.build/Objects-normal/armv6\"",
+					"\"$(SRCROOT)/build/player.build/Release-iphoneos/player.build/Objects-normal/armv7\"",
+					"\"$(SRCROOT)/build/Release-iphoneos\"",
+					"\"$(SRCROOT)/ \"$(SRCROOT)/build/Release-iphonesimulator\"",
+				);
+				PRODUCT_NAME = player;
+				SKIP_INSTALL = YES;
+				STRIP_INSTALLED_PRODUCT = NO;
+				VALID_ARCHS = "arm64 armv7";
+			};
+			name = Release;
+		};
+		1DEB922308733DC00010E9CD /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = "$(ARCHS_STANDARD_32_BIT)";
+				GCC_C_LANGUAGE_STANDARD = c99;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					STDC_HEADERS,
+					HAVE_STDINT_H,
+					__IPHONE_OS__,
+					USE_DOUBLE_PRECISION,
+				);
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = (
+					"../../include/**",
+					"../../tools/**",
+					"ffmpeg/**",
+					"../../network/**",
+				);
+				IPHONEOS_DEPLOYMENT_TARGET = 4.3;
+				OTHER_LDFLAGS = "-ObjC";
+				PREBINDING = NO;
+				SDKROOT = iphoneos;
+			};
+			name = Debug;
+		};
+		1DEB922408733DC00010E9CD /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = "$(ARCHS_STANDARD_32_BIT)";
+				GCC_C_LANGUAGE_STANDARD = c99;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					STDC_HEADERS,
+					HAVE_STDINT_H,
+					__IPHONE_OS__,
+					USE_DOUBLE_PRECISION,
+				);
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = (
+					"../../include/**",
+					"../../tools/**",
+					"ffmpeg/**",
+					"../../network/**",
+				);
+				IPHONEOS_DEPLOYMENT_TARGET = 4.3;
+				LIBRARY_SEARCH_PATHS = "";
+				OTHER_LDFLAGS = "-ObjC";
+				PREBINDING = NO;
+				SDKROOT = iphoneos;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		1DEB921E08733DC00010E9CD /* Build configuration list for PBXNativeTarget "player" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1DEB921F08733DC00010E9CD /* Debug */,
+				1DEB922008733DC00010E9CD /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		1DEB922208733DC00010E9CD /* Build configuration list for PBXProject "player" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1DEB922308733DC00010E9CD /* Debug */,
+				1DEB922408733DC00010E9CD /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 0867D690FE84028FC02AAC07 /* Project object */;
+}

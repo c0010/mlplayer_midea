@@ -1,0 +1,72 @@
+//
+//  CMBrowser.h
+//  MLPlayer
+//  通过id跳转到课件资讯
+//  Created by water on 14-10-21.
+//  Copyright (c) 2014年 w. All rights reserved.
+//
+
+#import <Foundation/Foundation.h>
+#import "cmbrowser.h"
+#import "cmcommon.h"
+#import "tool.h"
+#import "cmexamlist.h"
+
+typedef void(^HandlerSuccess)(CMBrowser *);
+typedef void(^HandlerFailure)(int errorCode);
+typedef void(^HandlerExamListSuccess)(CMExamList *);
+
+class CMBrowserHandlerListener;
+
+@interface CMBrowserHandler : NSObject
+{
+    CMExamList* m_examlist;
+    CMBrowser* m_browser;
+    CMBrowserHandlerListener *m_handlerListener;
+ 
+}
+
+@property(nonatomic,strong)HandlerSuccess m_handlerSuccess;
+@property(nonatomic,strong)HandlerExamListSuccess m_handlerExamSuccess;
+@property(nonatomic,strong)HandlerFailure m_handlerFailure;
+
++ (id)handler;
+
+- (void)doHandlerSuccess;
+- (void)doHandlerFailure:(int) errorCode;
+
+//通过资讯id获取资讯
+- (void)doRequestNewsById:(NSString *)newsId success:(HandlerSuccess)success failure:(HandlerFailure)failure;
+
+//通过课件id获取课件
+- (void)doRequestCoursewareById:(NSString *)wareId success:(HandlerSuccess)success failure:(HandlerFailure)failure;
+
+//通过考试id获取考试
+- (void)doRequestExamById:(NSString *)examId success:(HandlerExamListSuccess)success failure:(HandlerFailure)failure;
+
+@end
+
+class CMBrowserHandlerListener: public IMUpdateDataListener
+{
+public:
+    CMBrowserHandlerListener(){};
+    ~CMBrowserHandlerListener(){};
+    
+    void OnUpdateDataProgress(void* UserData, int nPercent)
+    {
+    }
+    
+    void OnUpdateDataFinish(void* UserData, int Result)
+    {
+        [tool DisimissActivityIndicator];
+        
+        CMBrowserHandler* groupManager = (__bridge CMBrowserHandler*)UserData;
+        if(Result == TResult::ESuccess || Result == TResult::ENothing)
+        {
+            [groupManager doHandlerSuccess];
+        }else {
+            [groupManager doHandlerFailure:Result];
+        }
+    }
+    
+};

@@ -1,0 +1,552 @@
+// //////////////////////////////////////////////////////////////////////////////
+//  Copyright (c) 2009,
+//  All rights reserved.
+//
+//  FileName:
+//  Description:
+//  Author:
+////////////////////////////////////////////////////////////////////////////////
+
+#include "stdafx.h"
+#include "cmbrowser.h"
+#include "cmsession.h"
+#include "utf8ncpy.h"
+#include "cmcommon.h"
+#include "cmcourseinfo.h"
+
+CMBrowser::CMBrowser(IMUpdateDataListener* pListener)
+:CMContenthandler()
+{
+    memset(sCategoryID, 0, 64);
+    memset(ratingID, 0, 64);
+
+    SetListener(pListener, NULL);
+}
+
+CMBrowser& CMBrowser::operator=(const CMBrowser& right)
+{
+    utf8ncpy(sCategoryID, right.sCategoryID,63);
+	sCategoryID[63] = '\0';
+
+    CMContenthandler::operator=(right);
+
+    return  *this;
+}
+
+
+CMBrowser::~CMBrowser()
+{
+
+}
+
+BOOL CMBrowser::RequestMarkClass(const char* markID)
+{
+    if(IsRunning())
+        return FALSE;
+
+    char sParam[200];
+    snprintf(sParam,200,"categoryid=%s",markID);
+    snprintf(m_tablename,64,"");
+    SetPaging(TRUE);
+
+
+    return CMContenthandler::Request(SERVICE_GETSAMEMARKCLASS,sParam);
+}
+
+
+BOOL CMBrowser::RequestPisitionCourse()
+{
+    if(IsRunning())
+        return FALSE;
+
+    memset(sCategoryID, 0, 64);
+    utf8ncpy(sCategoryID, "99", 63);
+
+    char sParam[10];
+    sParam[0]='\0';
+    snprintf(m_tablename,64,"browserall_position");
+    SetPaging(TRUE);
+
+    return CMContenthandler::Request(SERVICE_GETPOSITIONCOURSE,sParam);
+}
+BOOL CMBrowser::RequestCoursewareById(const char* coursewareID)
+{
+    if(IsRunning())
+        return FALSE;
+
+    memset(sCategoryID, 0, 64);
+
+    if (strlen(coursewareID) == 0) {
+        return FALSE;
+    }
+
+    char sParam[200];
+    snprintf(sParam,200,"id=%s",coursewareID);
+
+    snprintf(m_tablename,64,"");
+    SetPaging(FALSE);
+
+    return CMContenthandler::Request(SERVICE_GETCOURSEWAREBYID,sParam);
+}
+
+
+BOOL CMBrowser::RequestNewsById(const char* newsID)
+{
+    if(IsRunning())
+        return FALSE;
+
+    memset(sCategoryID, 0, 64);
+
+    if (strlen(newsID) == 0) {
+        return FALSE;
+    }
+
+    char sParam[200];
+    snprintf(sParam,200,"id=%s",newsID);
+
+    snprintf(m_tablename,64,"");
+    SetPaging(FALSE);
+
+    return CMContenthandler::Request(SERVICE_GETNEWSBYID,sParam);
+}
+
+BOOL CMBrowser::Request(const char* sFlag, const char* sID)
+{
+    if(IsRunning())
+        return FALSE;
+
+    utf8ncpy(sCategoryID, sID, 63);
+//    CM_ERRP("CMBrowser::Request flag %s id %s", sFlag, sID);
+    char sParam[200];
+    snprintf(sParam,200,"flag=%s&categoryid=%s",sFlag,sID);
+    snprintf(m_tablename,64,"browserall_%s",sFlag);
+
+    SetPaging(TRUE);
+
+    return CMContenthandler::Request(SERVICE_GETCONTENTLIST,sParam);
+}
+
+
+
+BOOL CMBrowser::RequestTrain(const char* sFlag, const char* sTrainID)
+{
+	if(IsRunning())
+		return FALSE;
+	utf8ncpy(sCategoryID,sTrainID,63);
+
+    char sParam[200];
+    snprintf(sParam,200,"flag=%s&id=%s",sFlag,sTrainID);
+    snprintf(m_tablename,64,"browserall_%s",sFlag);
+
+    SetPaging(TRUE);
+
+    return CMContenthandler::Request(SERVICE_GETMYTRAINCOURSELIST,sParam);
+}
+
+BOOL CMBrowser::RequestTop(const char* sFlag,const char* sBrowerID)
+{
+	if(IsRunning())
+		return FALSE;
+	utf8ncpy(sCategoryID,sBrowerID,63);
+
+    char sParam[200];
+    snprintf(sParam,200,"flag=%s&id=%s",sFlag,sBrowerID);
+    snprintf(m_tablename,64,"browserall_%s",sFlag);
+    SetRequestType(0);
+    SetPaging(FALSE);
+    return CMContenthandler::Request(SERVICE_GETTOPLIST,sParam);
+
+}
+
+void CMBrowser::DoClearList()
+{
+	m_mutex.Lock();
+    if(m_lstHeadItem)
+    {
+        for(int i = 0; i < m_lstHeadItem->size(); i++)
+        {
+            TBrowserItem* ptr = m_lstHeadItem->at(i);
+            SAFEDELETE(ptr);
+        }
+
+        m_lstHeadItem->clear();
+    }
+	m_mutex.UnLock();
+
+	m_mutex.Lock();
+    if(m_lstItem)
+    {
+        for(int i = 0; i < m_lstItem->size(); i++)
+        {
+            TBrowserItem* ptr = m_lstItem->at(i);
+            SAFEDELETE(ptr);
+        }
+
+        m_lstItem->clear();
+    }
+    m_mutex.UnLock();
+
+}
+
+
+void CMBrowser::DoClear()
+{
+
+    DoClearList();
+
+    sqlite3* db = CheckTable();
+
+    if(strlen(m_tablename)<=0)
+        return;
+
+
+    if(db != NULL)
+    {
+        CHAR sql[1024];
+        sql[0] = '\0';
+        sqlite3_stmt *stmt;
+
+        snprintf(sql,1024,"DELETE FROM %s WHERE categoryid = ? ", m_tablename);
+
+        if (sqlite3_prepare_v2(db, sql, -1, &stmt, NULL) == SQLITE_OK)
+        {
+            BindParam(stmt,1, sCategoryID);
+
+            if (sqlite3_step(stmt) != SQLITE_DONE)
+            {
+                CM_ERRP("exec %s failed.", sql);
+            }
+            sqlite3_finalize(stmt);
+        }
+    }
+
+}
+
+
+BOOL CMBrowser::DoCreate(sqlite3* db)
+{
+	char *errorMsg;
+	char sql[1024];
+
+    BOOL ret=FALSE;
+
+
+    if(strlen(m_tablename)>0)
+    {
+
+        snprintf(sql,1024,"CREATE TABLE IF NOT EXISTS %s(_id INTEGER PRIMARY KEY AUTOINCREMENT,id TEXT,isheaditem INTEGER, categoryid TEXT)", m_tablename);
+        
+        if (sqlite3_exec(db, sql, NULL, NULL, &errorMsg)==SQLITE_OK) {
+            ret= TRUE ;
+        }
+        else
+        {
+            CM_ERRP("exec %s failed.error:%s", sql, errorMsg);
+            ret= FALSE;
+        }
+    }
+    else
+        ret=TRUE;
+
+        return ret;
+}
+
+BOOL CMBrowser::DoPutItem(TiXmlElement* pItem, sqlite3* db, TBrowserItem*& item)
+{
+    const CHAR* pid = NULL;
+
+    pid = pItem->Attribute("id");
+
+    if(!db)
+        return FALSE;
+
+    BOOL ret = FALSE;
+
+    if(strlen(m_tablename)>0)
+    {
+        CHAR sql[1024];
+
+        sqlite3_stmt *stmt;
+
+        snprintf(sql,1024,"INSERT INTO %s(id,isheaditem,categoryid) VALUES (?,?,?)", m_tablename);
+
+        if (sqlite3_prepare_v2(db, sql, -1, &stmt, NULL) == SQLITE_OK) {
+            BindParam(stmt, 1, pid);
+
+            BindParam(stmt, 2, item->bIsHeadItem);
+
+            BindParam(stmt, 3, sCategoryID);
+
+            if(sqlite3_step(stmt) == SQLITE_DONE)
+            {
+                ret = TRUE;
+            }
+            else
+            {
+                CM_ERRP("exec %s failed.error:%s", sql, sqlite3_errmsg(db));
+            }
+
+            sqlite3_finalize(stmt);
+        }
+        else {
+            CM_ERRP("exec %s failed.error:%s", sql, sqlite3_errmsg(db));
+        }
+    }
+    else
+        ret=TRUE;
+
+
+    if(!pItem || !db)
+        return FALSE;
+
+    *item=pItem;
+
+    if (item->bIsHeadItem)
+    {
+        if(m_lstHeadItem)
+            m_lstHeadItem->push_back(item);
+    }
+    else
+    {
+        if(m_lstItem)
+            m_lstItem->push_back(item);
+    }
+
+    if(DoSaveTBrowseitem(db, *item))
+        ret= TRUE;
+
+
+    char* errorMsg;
+
+    if (ret == FALSE) {
+        if (db != NULL && sqlite3_exec(db, "ROLLBACK TRANSACTION;", 0,0, &errorMsg) != SQLITE_OK)
+        {
+            CM_ERRP("ROLLBACK TRANSACTION failed.error:%s", errorMsg);
+        }
+    }
+
+    return ret;
+
+}
+
+BOOL CMBrowser::DoGetCacheItems(sqlite3* db)
+{
+	BOOL ret = FALSE;
+	sqlite3_stmt *stmt;
+	CHAR sql[1024];
+	sql[0] = '\0';
+
+    if(strlen(m_tablename)<=0)
+        return FALSE;
+
+
+    snprintf(sql,1024,"SELECT main.*,  sub.isheaditem , sub.categoryid   FROM %s AS sub  LEFT JOIN %s AS main ON sub.id = main.id WHERE sub.categoryid = ? ",m_tablename,kCourseTable);
+    if (m_bPaging)
+    {
+        snprintf(sql,1024,"%s LIMIT %d OFFSET %d", sql, m_nPageSize, (m_nPageNo - 1)*m_nPageSize);
+    }
+
+//    CM_ERRP("CMBrowser DoGetCacheItems %s", sql);
+//    CM_ERRP("CMBrowser DoGetCacheItems categoryid %s", sCategoryID);
+
+	if (sqlite3_prepare_v2(db, sql, -1, &stmt, NULL) == SQLITE_OK)
+	{
+        BindParam(stmt, 1, sCategoryID);
+        if ( m_nPageNo == 1)
+        {
+
+            DoClearList();
+
+        }
+
+        while(sqlite3_step(stmt)==SQLITE_ROW)
+        {
+
+            if (sqlite3_column_int(stmt, 30)==0)
+            {
+                TClassItem* item= new TClassItem();
+                item->fetchItem(stmt);
+
+                if(sqlite3_column_int(stmt, kDbColumnIndex+1)==0)
+                    item->bIsHeadItem=FALSE;
+                else
+                    item->bIsHeadItem=TRUE;
+
+                if(item->bIsHeadItem)
+                {
+                    m_mutex.Lock();
+                    m_lstHeadItem->push_back(item);
+                    m_mutex.UnLock();
+                }
+                else
+                {
+                    m_mutex.Lock();
+
+                    if(m_lstItem)
+                        m_lstItem->push_back(item);
+
+                    m_mutex.UnLock();
+
+                }
+            }
+            else
+            {
+                TCoursewareItem* item=new TCoursewareItem();
+                item->fetchItem(stmt);
+
+
+                if(strlen(m_tablename)<=0)
+                    item->bIsHeadItem=FALSE;
+                else
+                    item->bIsHeadItem=sqlite3_column_int(stmt, kDbColumnIndex+1);
+
+                if(item->bIsHeadItem)
+                {
+                    m_mutex.Lock();
+                    m_lstHeadItem->push_back(item);
+                    m_mutex.UnLock();
+                }
+                else
+                {
+                    m_mutex.Lock();
+
+                    if(m_lstItem)
+                        m_lstItem->push_back(item);
+
+                    m_mutex.UnLock();
+
+                }
+            }
+
+        }
+
+        sqlite3_finalize(stmt);
+
+		m_nTotalCount = 0;
+		if(strlen(m_tablename)<=0)
+			snprintf(sql,1024,"SELECT COUNT(*) FROM %s ", m_tablename);
+		else
+			snprintf(sql,1024,"SELECT COUNT(*) FROM %s WHERE categoryid = ? ", m_tablename);
+
+//		CM_ERRP("CMBrowser DoGetCacheItems %s", sql);
+
+		if (sqlite3_prepare_v2(db, sql, -1, &stmt, NULL) == SQLITE_OK)
+		{
+			if(strlen(m_tablename)>0)
+				BindParam(stmt, 1, sCategoryID);
+
+			if (sqlite3_step(stmt) == SQLITE_ROW)
+			{
+				m_nTotalCount = sqlite3_column_int(stmt, 0);
+			}
+
+		}
+
+        sqlite3_finalize(stmt);
+
+    	if (GetItemCount() > 0 || GetHeadItemCount() > 0) {
+    		//如果缓存为空，返回false，触发远程请求
+    		ret = TRUE;
+    	}
+	}
+    
+    int count = m_nTotalCount/m_nPageSize;
+    if(m_nTotalCount%m_nPageSize > 0)
+        count++;
+    
+    m_bEnd = (m_nPageNo >= count);
+
+	if(m_pListener)
+		m_pListener->OnUpdateDataFinish(m_UserData, TResult::ESuccess);
+	return ret;
+}
+
+
+void CMBrowser::OnSessionCmd(unsigned int nCmdID, unsigned int nCode, TiXmlDocument* pDoc)
+{
+
+    if(nCmdID == SERVICE_GETCOURSEWAREBYID || nCmdID == SERVICE_GETNEWSBYID)
+    {
+
+        Clear();
+        INT32 result = TResult::EUnknownError;
+        if (nCode == MER_OK)
+        {
+            ASSERT(pDoc);
+
+            TiXmlElement *pItem = pDoc->RootElement();
+            INT32 nErr = 0;
+            INT32 nCmdID = 0;
+            pItem->QueryIntAttribute("no", &nCmdID);
+            if (m_bPaging)
+            {
+				pItem->QueryIntAttribute("totalcount", &m_nTotalCount);
+				pItem->QueryIntAttribute("pageno", &m_nPageNo);
+				int count = m_nTotalCount/m_nPageSize;
+				if(m_nTotalCount%m_nPageSize > 0)
+					count++;
+				m_bEnd = (m_nPageNo >= count);
+            }
+
+            if(pItem->QueryIntAttribute("errno", &nErr) == TIXML_SUCCESS)
+            {
+
+                if (nErr == 0)
+                {
+                    if(!pItem->NoChildren())
+					{
+
+                        TiXmlElement* plistItem = pItem->FirstChildElement("item");
+                        while(plistItem)
+                        {
+
+                            TBrowserItem* bItem= new TCoursewareItem();
+                            bItem->bIsHeadItem=FALSE;
+                            if(nCmdID == SERVICE_GETCOURSEWAREBYID)
+                                bItem->nModel = 1;
+                            else
+                                bItem->nModel = 0;
+
+                            *bItem=plistItem;
+
+                            m_lstItem -> push_back(bItem);
+
+                            plistItem = plistItem->NextSiblingElement("item");
+                        }
+                    }
+
+                    if(m_lstItem && m_lstItem->size() > 0)
+						result = TResult::ESuccess;
+					else
+						result = TResult::ENothing;
+                }
+                else if(nErr == -17)
+                {
+                	result = TResult::ENoPowerCourse;
+                }
+                else
+                	result = TResult::EUnknownError;
+            }
+            else
+                result = TResult::EProtocolFormatError;
+
+        } else if (nCode == MERN_OFFLINE)
+        {
+            result = TResult::ENotSupportOffline;
+        }
+        else if(nCode == MERN_INITIALIZE)
+        {
+            result = TResult::ENetDisconnect;
+        }
+        else
+            result = TResult::ENetTimeout;
+
+        if(m_pListener)
+            m_pListener->OnUpdateDataFinish(m_UserData, result);
+
+    }
+    else
+        CMContenthandler::OnSessionCmd(nCmdID, nCode, pDoc);
+
+}
+

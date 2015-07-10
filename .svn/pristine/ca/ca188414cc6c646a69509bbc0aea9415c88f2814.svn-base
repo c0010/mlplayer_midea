@@ -1,0 +1,101 @@
+//
+//  CMViewController.h
+//  OCplusplus
+//  
+//头衔页面
+//
+//  Created by Tim on 13-1-19.
+//  Copyright 2011 __MyCompanyName__. All rights reserved.
+#include "stdafx.h"
+#import "CMTitleController.h"
+#include "cmmyinfo.h"
+#import <QuartzCore/QuartzCore.h> 
+#import "CMWebView.h"
+#include "cmgeneral.h"
+//#import "MobClick.h"
+#import "cmglobal.h"
+#import "CMRuleViewController.h"
+
+@implementation CMTitleController
+
+
+- (void)viewWillAppear:(BOOL)animated
+{
+    //进入页面 开始计时
+    //[MobClick beginEvent:@"MyTitleTime"];
+    [super viewWillAppear:animated];
+}
+
+
+- (void)viewWillDisappear:(BOOL)animated
+{
+    //离开页面 结束计时 
+    //[MobClick endEvent:@"MyTitleTime"];
+    [super viewWillDisappear:animated];
+}
+
+
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    
+	self.title = I(@"我的头衔");
+    self.titleLabel.text = self.navigationItem.title;
+    self.view.backgroundColor = [UIColor whiteColor];
+    self.navigationController.navigationBarHidden = NO;
+    
+	UIButton *rightBtn = [UIButton buttonWithType:UIButtonTypeSystem];
+	rightBtn.frame = CGRectMake(0, 0, 60, 44);
+    [rightBtn setTitle:I(@"积分规则") forState:UIControlStateNormal];
+    rightBtn.titleLabel.font = [UIFont systemFontOfSize:kTextSizeMidLess];
+	[rightBtn setTitleColor:kColorButtonTitle forState:UIControlStateNormal];
+	[rightBtn setTitleColor:kColorGrayText forState:UIControlStateHighlighted];
+	[rightBtn addTarget:self action:@selector(gotoCreditRule:) forControlEvents:UIControlEventTouchUpInside];
+    
+    UIBarButtonItem *rightItem = [[UIBarButtonItem alloc] initWithCustomView:rightBtn];
+    self.navigationItem.rightBarButtonItem = rightItem;
+    
+	CGRect f = self.view.bounds;
+    f.size.height -= 64;
+	UIWebView* webView = [[UIWebView alloc] initWithFrame:f];
+    //[webView setBackgroundColor:[UIColor whiteColor]];
+	CMGeneral general;
+	const char*sUrl = general.FormatUrlBySID(CMMyInfo::GetInstance()->GetDetailUrl());
+	if(!sUrl)
+		return;
+
+	NSURL *desturl = [NSURL URLWithString:[NSString stringWithUTF8String:sUrl]];
+	
+	NSURLRequest *requestObj = [NSURLRequest requestWithURL:desturl];
+
+    //不对webview里面的数据进行检测 即不显示任何电话号码、URL的样式
+    webView.dataDetectorTypes = UIDataDetectorTypeNone;
+    
+    [webView setDelegate:self];
+    [tool ShowActivityIndicator:self.view];
+    
+	[webView loadRequest:requestObj];
+	[self.view addSubview:webView];
+}
+
+- (void)webViewDidFinishLoad:(UIWebView *)webView;
+{
+    [tool DisimissActivityIndicator];
+}
+
+- (void)webView:(UIWebView *)webView didFailLoadWithError:(NSError *)error;
+{
+    [tool DisimissActivityIndicator];
+    NSLog(@"error:%@",error);
+}
+
+- (void)gotoCreditRule:(id)sender
+{
+    CMRuleViewController *ruleControl = [[CMRuleViewController alloc] init];
+    
+    //经商议 此处不显示标题 测试和美工均同意
+    //ruleControl.title = I(@"我的头衔");
+    [self.navigationController pushViewController:ruleControl animated:YES];
+}
+
+
+@end

@@ -1,0 +1,110 @@
+//
+//  CMNavControl.h
+//  MLPlayer
+//
+//  Created by Tim on 12-12-26.
+//  Copyright 2013 w. All rights reserved.
+//
+
+#import <UIKit/UIKit.h>
+#import <AudioToolbox/AudioToolbox.h>
+#import "CMViewController.h"
+#import "cmcommon.h"
+#import "cmshake.h"
+#import "cmspecialtopic.h"
+#import "CMNavgateItem.h"
+
+class CMClassInfoRatingListener;
+class CMContenthandler;
+class CMDetailShakeUpdateListener;
+@class PageView;
+@class ComplexButton;
+@class CMClassInfoControl;
+@interface CMCourseDetailControl : CMViewController
+{
+	ComplexButton* btnfavorite;
+	ComplexButton* btncomment;
+	ComplexButton* btndown;
+	ComplexButton* btnlike;
+    ComplexButton* btnshare;
+    TClassItem* bitem;
+    BOOL bIsShake;
+    
+    UIView *m_pImgUp;
+    UIView *m_pImgDown;
+    BOOL upImgHidden;
+    BOOL downImgHidden;
+    CMShake *m_pShake;
+    CMDetailShakeUpdateListener *m_pShakeListener;
+    CMClassInfoRatingListener *m_pRatingListener;
+ 
+    
+@public
+    CMClassInfoControl* curview;
+    
+}
+
+@property (nonatomic, assign) BOOL bIsShake;
+@property (nonatomic, assign) BOOL isFromInteract;
+@property (nonatomic, assign) BOOL bIsShowTabBar;
+
+
+-(void)refreshTabarStatus:(NSNotification *)aNotification;
+-(void)setInfo:(TBrowserItem&)startitem;
+-(void)createTabbar;
+-(void)updateTabarStatus:(TBrowserItem&)item;
+-(void)gotoFavorite;
+-(void)gotoDown;
+-(void)gotoLike;
+-(void)gotoComment;
+-(void)refreshBtnLike;
+-(void)decreaseLikeCount;
+
+- (void)reset;
+- (void)refreshView;
+@end
+
+class CMDetailShakeUpdateListener: public IMUpdateDataListener
+{
+    virtual void OnUpdateDataProgress(void* UserData, int nPercent)
+    {
+        
+    }
+    
+    virtual void OnUpdateDataFinish(void* UserData, int Result)
+    {
+        CMCourseDetailControl *courseDetail = (__bridge CMCourseDetailControl*)UserData;
+        
+        if (Result == TResult::ESuccess)
+        {
+            [courseDetail refreshView];
+        }
+        else
+        {
+            ;
+        }
+    }
+};
+
+class CMClassInfoRatingListener : public IMRatingListener
+{
+	void OnRating(void* UserData, int nNewRating, int Result)
+	{
+		NSLog(@"CMClassInfoRatingListener OnRating result=%d",Result);
+        
+		CMCourseDetailControl* Control = (__bridge CMCourseDetailControl*)UserData;
+        
+		
+		if(Result == TResult::ESuccess || Result == TResult::ENothing)
+		{
+            [Control refreshBtnLike];
+		}
+        else if (Result == TResult::ENotSupportOffline)
+        {
+            [Control refreshBtnLike];
+            [Control decreaseLikeCount];
+        }
+        else {
+		}
+	}
+};

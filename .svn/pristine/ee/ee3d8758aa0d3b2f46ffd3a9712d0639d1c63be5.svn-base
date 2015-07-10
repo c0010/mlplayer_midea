@@ -1,0 +1,563 @@
+//
+//  CMNavControl.h
+//  MLPlayer
+//
+//  Created by Tim on 12-12-26.
+//  Copyright 2013 w. All rights reserved.
+//
+
+#import "CMCourseDetailControl.h"
+#import "CMMainControl.h"
+#include "cmcontenthandler.h"
+#import "CMClassInfoControl.h"
+#import "ComplexButton.h"
+#import "MobClick.h"
+#import "CMInteractViewController.h"
+
+@implementation CMCourseDetailControl
+@synthesize bIsShake;
+
+-(void)setInfo:(TBrowserItem&)startitem
+{
+    bitem = new TClassItem();
+    *bitem = startitem;
+}
+
+-(void)refreshBtnLike
+{
+    [self updateTabarStatus:*bitem];
+}
+
+- (void)refreshTabarStatus:(NSNotification *)aNotification{
+    CMCourseInfo *m_CourseInfo = [curview getCourseInfo];
+    SAFEDELETE(bitem);
+    bitem = new TClassItem();
+    m_CourseInfo->GetClassItem(*bitem);
+    
+    [self updateTabarStatus:*bitem];
+    
+    if (self.isFromInteract && aNotification.object && [aNotification.object intValue] == TResult::ENothing) {
+        
+        [tool ShowAlert:I(@"此课程不可用")];
+        
+        [self.navigationController popViewControllerAnimated:YES];
+    }
+}
+
+
+- (void)viewInit{
+    if (bIsShake)
+    {
+        self.title = I(@"您摇到的课程");
+    }
+    else
+    {
+        self.title = I(@"课程详情");
+    }
+    curview = [[CMClassInfoControl alloc] initWithFrame:CGRectMake(0, 0, UI_IOS_WINDOW_WIDTH, UI_IOS_VC_HEIGHT)];
+    curview.courseName=[NSString stringWithUTF8String:bitem->sTitle];
+	[curview setInfo:*bitem];
+	//[curview updateview];       //不要在这里更新视图，要在listener侦听到数据回来后更新  #廖宏兴
+    [[curview infoBtn] setEnabled:NO];
+    [curview.btnlike addTarget:self action:@selector(gotoLike) forControlEvents:UIControlEventTouchUpInside];
+}
+
+
+- (BOOL)canBecomeFirstResponder
+{
+    return YES;
+}
+
+- (void)viewWillAppear:(BOOL)animated
+{
+    [curview updateview];   //从课件学习界面回来时，刷新数据，标为已学；＃廖宏兴
+    bitem->SetListener(NULL, m_pRatingListener, NULL);
+    bitem->SetUserData((__bridge void*)self);
+    [MobClick beginEvent:@"CourseDetail"];
+    [self becomeFirstResponder];
+    [super viewWillAppear:animated];
+}
+
+
+- (void)viewWillDisappear:(BOOL)animated
+{
+    [MobClick endEvent:@"CourseDetail"];
+    [self resignFirstResponder];
+    [super viewWillDisappear:animated];
+}
+
+
+#pragma mark - shake
+
+- (void)motionBegan:(UIEventSubtype)motion withEvent:(UIEvent *)event
+{
+    if (motion == UIEventSubtypeMotionShake && bIsShake)
+    {
+        [UIView transitionWithView:m_pImgUp
+                          duration:0.5f
+                           options:UIViewAnimationOptionCurveEaseInOut
+                        animations:^{
+                            CGRect upframe = m_pImgUp.frame;
+                            while (upframe.origin.y <= -1)
+                            {
+                                upframe.origin.y += 1;
+                            }
+                            m_pImgUp.frame = upframe;
+                        }
+                        completion:^(BOOL finished) {
+                            upImgHidden = NO;
+                            
+                            if (!downImgHidden)
+                            {
+                                [self performSelector:@selector(reset) withObject:nil afterDelay:0.3];
+                            }
+                        }];
+        
+        [UIView transitionWithView:m_pImgDown
+                          duration:0.5f
+                           options:UIViewAnimationOptionCurveEaseInOut
+                        animations:^{
+                            CGRect downframe = m_pImgDown.frame;
+                            while (downframe.origin.y >= (UI_IOS_WINDOW_HEIGHT/2+1))
+                            {
+                                downframe.origin.y -= 1;
+                            }
+                            m_pImgDown.frame = downframe;
+                        }
+                        completion:^(BOOL finished) {
+                            downImgHidden = NO;
+                            
+                            if (!upImgHidden)
+                            {
+                                [self performSelector:@selector(reset) withObject:nil afterDelay:0.3];
+                            }
+                        }];
+    }
+}
+
+- (void)motionCancelled:(UIEventSubtype)motion withEvent:(UIEvent *)event
+{
+    if (motion == UIEventSubtypeMotionShake && bIsShake)
+    {
+        [self performSelector:@selector(reset) withObject:nil afterDelay:0.3];
+    }
+}
+
+- (void)motionEnded:(UIEventSubtype)motion withEvent:(UIEvent *)event
+{
+    if (motion == UIEventSubtypeMotionShake && bIsShake)
+    {
+        [self performSelector:@selector(reset) withObject:nil afterDelay:0.3];
+    }
+}
+
+- (void)reset
+{
+    if (!upImgHidden && !downImgHidden)
+    {
+        if (!m_pShakeListener)
+        {
+            m_pShakeListener = new  CMDetailShakeUpdateListener();
+        }
+        
+        if (!m_pShake)
+        {
+            m_pShake = new CMShake(m_pShakeListener);
+            m_pShake->SetUserData((__bridge void*)self);
+        }
+        
+        m_pShake->SetListener(m_pShakeListener, NULL);
+        m_pShake->SetUserData((__bridge void*)self);
+
+        m_pShake->Request();
+        
+        AudioServicesPlaySystemSound(sysSoundID);
+        AudioServicesPlaySystemSound(kSystemSoundID_Vibrate);
+        
+        [UIView transitionWithView:m_pImgUp
+                          duration:0.5f
+                           options:UIViewAnimationOptionCurveEaseInOut
+                        animations:^{
+                            CGRect upframe = m_pImgUp.frame;
+                            while (upframe.origin.y >= -(UI_IOS_WINDOW_HEIGHT/2 -1))
+                            {
+                                upframe.origin.y -= 1;
+                            }
+                            m_pImgUp.frame = upframe;
+                            upImgHidden = YES;
+                        }
+                        completion:^(BOOL finished) {
+                        }];
+        
+        [UIView transitionWithView:m_pImgDown
+                          duration:0.5f
+                           options:UIViewAnimationOptionCurveEaseInOut
+                        animations:^{
+                            CGRect downframe = m_pImgDown.frame;
+                            while (downframe.origin.y <= UI_IOS_WINDOW_HEIGHT-1)
+                            {
+                                downframe.origin.y += 1;
+                            }
+                            m_pImgDown.frame = downframe;
+                            downImgHidden = YES;
+                        }
+                        completion:^(BOOL finished) {
+                        }];
+    }
+}
+
+
+- (void)refreshView
+{
+    TBrowserItem *item = NULL;
+
+    if(m_pShake->GetItemModel(0)==0)
+    {
+        item = new TClassItem();
+    }
+    else
+    {
+        item = new TCoursewareItem();
+    }
+
+    m_pShake->GetItem(0, item);
+
+    *bitem = *item;
+
+    SAFEDELETE(item);
+}
+
+
+#pragma mark - systerm function
+- (void)viewDidUnload{
+    [super viewDidUnload];
+    [[NSNotificationCenter defaultCenter] removeObserver:self name:@"refreshTabarStatus" object:nil];
+}
+
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(refreshTabarStatus:) name:@"refreshTabarStatus" object:nil];
+    
+    NSString *strAudio = [[NSBundle mainBundle] pathForResource:@"glass" ofType:@"wav"];
+    AudioServicesCreateSystemSoundID((__bridge CFURLRef)[NSURL URLWithString:strAudio], &sysSoundID);
+    
+	self.title = I(@"课程详情");
+    
+    self.titleLabel.text = self.title;
+    
+    [self viewInit];
+    [self.view addSubview:curview];
+    if (self.bIsShowTabBar)
+    {
+        [self createTabbar];
+    }
+	
+    MLPlayerAppDelegate *appDelegate = [UIApplication sharedApplication].delegate;
+    UIImageView *pImgUp = [[UIImageView alloc] initWithFrame:CGRectMake((UI_IOS_WINDOW_WIDTH-125)/2, UI_IOS_WINDOW_HEIGHT/2-100, 125, 100)];
+    pImgUp.backgroundColor = [UIColor clearColor];
+    pImgUp.image = [UIImage imageNamed:@"shakeup"];
+    
+    m_pImgUp = [[UIView alloc] initWithFrame:CGRectMake(0, -UI_IOS_WINDOW_HEIGHT/2, UI_IOS_WINDOW_WIDTH, UI_IOS_WINDOW_HEIGHT/2)];
+    m_pImgUp.backgroundColor = [UIColor colorWithRed:38/255.0 green:38/255.0 blue:38/255.0 alpha:1.0];
+    [m_pImgUp addSubview:pImgUp];
+    [appDelegate.window addSubview:m_pImgUp];
+    
+    UIImageView *pImgDown = [[UIImageView alloc] initWithFrame:CGRectMake((UI_IOS_WINDOW_WIDTH-125)/2, 0, 125, 100)];
+    pImgDown.backgroundColor = [UIColor clearColor];
+    pImgDown.image = [UIImage imageNamed:@"shakedown"];
+    
+    m_pImgDown = [[UIView alloc] initWithFrame:CGRectMake(0, UI_IOS_WINDOW_HEIGHT, UI_IOS_WINDOW_WIDTH, UI_IOS_WINDOW_HEIGHT/2)];
+    m_pImgDown.backgroundColor = [UIColor colorWithRed:38/255.0 green:38/255.0 blue:38/255.0 alpha:1.0];
+    [m_pImgDown addSubview:pImgDown];
+    [appDelegate.window addSubview:m_pImgDown];
+    CMRELEASE(pImgDown);
+    CMRELEASE(pImgUp);
+	
+    UIButton *questionBtn = [UIButton buttonWithType:UIButtonTypeCustom];
+    questionBtn.frame = CGRectMake(0, 0, kBarItemWidth, kBarItemHeight);
+    questionBtn.imageEdgeInsets = [self itemFitDifferentVersion:NO];
+    [questionBtn setImage:[UIImage imageNamed:@"pull_down"] forState:UIControlStateNormal];
+//    [questionBtn setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
+//    [questionBtn setTitleColor:[UIColor lightGrayColor] forState:UIControlStateHighlighted];
+    [questionBtn addTarget:self action:@selector(showChoiceList:) forControlEvents:UIControlEventTouchUpInside];
+    
+    
+    UIBarButtonItem *rightBarButtonItem = [[UIBarButtonItem alloc] initWithCustomView:questionBtn];
+    self.navigationItem.rightBarButtonItem = rightBarButtonItem;
+    
+}
+
+- (void)showChoiceList:(UIButton *)sender{
+    
+    UIImage *favorateIma;
+    if(CMFavorites::GetInstance()->IsAdded(bitem->sFlag,bitem->sID)< 0)
+    {//未收藏
+        favorateIma = [UIImage imageNamed:@"favorite_n"];
+    }
+    else
+    {
+        favorateIma = [UIImage imageNamed:@"favorited_n"];
+    }
+    
+    NSMutableArray *menuItems = [NSMutableArray array];
+    
+    
+    if (bitem->bEnableShare)
+    {
+        [menuItems addObject:[qa_ChoiceListItem menuItem:I(@"分享")
+                                                   image:[UIImage imageNamed:@"share_n"]
+                                                  target:self
+                                                  action:@selector(gotoShare)]];
+    }
+    [menuItems addObject:[qa_ChoiceListItem menuItem:I(@"收藏")
+                                               image:favorateIma
+                                              target:self
+                                              action:@selector(gotoFavorite)]];
+    if (bitem->bEnabledownload)
+    {
+        [menuItems addObject:[qa_ChoiceListItem menuItem:I(@"下载")
+                                                  image:[UIImage imageNamed:@"down_n"]
+                                                 target:self
+                                                  action:@selector(gotoDown)]];
+    }
+    
+    
+    CGRect frame = CGRectMake(280.0, 0.0, 30, 62.0);
+    [qa_ChoiceList showMenuInView:self.navigationController.view
+                         fromRect:frame
+                        menuItems:menuItems
+                        transform:self.view.transform];
+}
+
+-(void)updateTabarStatus:(TBrowserItem&)item
+{
+	if(CMFavorites::GetInstance()->IsAdded(item.sFlag,item.sID)< 0)
+	{//未收藏
+		[btnfavorite setImage:[UIImage imageNamed:@"favorite_n"] forState:UIControlStateNormal];
+		[btnfavorite setImage:[UIImage imageNamed:@"favorite_p"] forState:UIControlStateHighlighted];
+		[btnfavorite setImage:[UIImage imageNamed:@"favorite_d"] forState:UIControlStateDisabled];
+	}
+	else
+	{//已收藏
+		[btnfavorite setImage:[UIImage imageNamed:@"favorited_n"] forState:UIControlStateNormal];
+		[btnfavorite setImage:[UIImage imageNamed:@"favorited_p"] forState:UIControlStateHighlighted];
+	}
+    
+    btncomment.enabled = item.bEnablecomment;
+    btndown.enabled    = item.bEnabledownload;
+    //是否可赞
+    curview.btnlike.hidden = !item.bEnablerating;
+    curview.lbllike.hidden = !item.bEnablerating;
+
+    btnshare.enabled = YES;
+    
+    [[curview infoBtn] setEnabled:YES];
+
+    if (CMGlobal::TheOne().IsOffline())
+    {
+        btncomment.enabled = NO;
+        btnlike.enabled = NO;
+        btndown.enabled = NO;
+        btnshare.enabled = NO;
+    }
+    
+    if(item.bIsRated)
+    {
+        [curview.btnlike setSelected:YES];
+    }else
+    {
+        [curview.btnlike setSelected:NO];
+        
+
+    }
+}
+
+-(void)gotoFavorite
+{
+	if([curview gotoFavorite])
+	{
+		[btnfavorite setImage:[UIImage imageNamed:@"favorited_n"] forState:UIControlStateNormal];
+		[btnfavorite setImage:[UIImage imageNamed:@"favorited_p"] forState:UIControlStateHighlighted];
+	}
+    else
+    {
+        [btnfavorite setImage:[UIImage imageNamed:@"favorite_n"] forState:UIControlStateNormal];
+		[btnfavorite setImage:[UIImage imageNamed:@"favorite_p"] forState:UIControlStateHighlighted];
+		[btnfavorite setImage:[UIImage imageNamed:@"favorite_d"] forState:UIControlStateDisabled];
+    }
+}
+-(void)gotoDown
+{
+	[curview gotoDown];
+}
+-(void)gotoLike
+{
+    if([curview.btnlike isSelected])
+        return;
+    
+    if(CMGlobal::TheOne().IsOffline())
+        return;
+    
+    BOOL IsRated = bitem->bIsRated;
+    if (IsRated) {
+        return;
+    }
+    
+    if (!m_pRatingListener) {
+		m_pRatingListener = new CMClassInfoRatingListener();
+    }
+    
+    bitem->SetListener(NULL, m_pRatingListener, NULL);
+    bitem->SetUserData((__bridge void*)self);
+    bitem->Rating();
+    
+    [curview.btnlike setSelected:YES];
+    [btnlike setBackgroundImage:[UIImage imageNamed:@"courselike_s.png"] forState:UIControlStateNormal];
+
+    NSInteger tempint=[curview.lbllike.text integerValue];
+    curview.lbllike.text=[NSString stringWithFormat:@"%d",(tempint+1)];
+    
+}
+
+-(void)decreaseLikeCount
+{
+    [curview.btnlike setSelected:YES];
+    NSInteger tempint=[curview.lbllike.text integerValue];
+    curview.lbllike.text=[NSString stringWithFormat:@"%d",(tempint-1)];
+}
+
+-(void)gotoShare
+{
+	CMInteractViewController *shareController = [[CMInteractViewController alloc]initWithTBrowserItem:bitem];
+
+    UINavigationController *navigationController = [[UINavigationController alloc] initWithRootViewController:shareController];
+    [self presentModalViewController:navigationController animated:YES];
+    CMRELEASE(shareController);
+    CMRELEASE(navigationController);
+}
+
+-(void)gotoComment
+{
+	[curview gotoComment];
+}
+-(void)createTabbar
+{
+	CGRect frame = CGRectMake(0, UI_IOS_WINDOW_HEIGHT-44-20-44, self.view.frame.size.width, 44);
+	UIView*tabbar = [[UIView alloc]initWithFrame:frame];
+	UIImageView* bgview = [[UIImageView alloc] initWithFrame:tabbar.bounds];
+	bgview.image = [UIImage imageNamed:@"bottombk"];
+	//tabbar.backgroundView = bgview;
+	//tabbar.backgroundColor = [UIColor colorWithPatternImage:];
+	frame.origin.y = 0;
+	btnfavorite = [[ComplexButton alloc] init];
+	frame.size.width = self.view.frame.size.width/3;
+    frame.size.height=80;
+    
+    NSInteger xoff=0;
+    
+    CGFloat btnWidth = NOShareInteract ? UI_IOS_WINDOW_WIDTH/3 : UI_IOS_WINDOW_WIDTH/4;;
+    
+    CGRect newframe=CGRectMake(xoff, 5,btnWidth, 40);
+    
+    
+	btnfavorite.frame = newframe;
+	[btnfavorite setTitleColor:[UIColor grayColor] forState:UIControlStateNormal];
+	[btnfavorite setTitleColor:UIColorRGB(0x065cc6) forState:UIControlStateHighlighted];
+	[btnfavorite addTarget:self action:@selector(gotoFavorite) forControlEvents:UIControlEventTouchUpInside];
+    
+    [btnfavorite setImage:[UIImage imageNamed:@"favorite_n"] forState:UIControlStateNormal];
+    [btnfavorite setImage:[UIImage imageNamed:@"favorite_p"] forState:UIControlStateHighlighted];
+    [btnfavorite setImage:[UIImage imageNamed:@"favorite_d"] forState:UIControlStateDisabled];
+	
+	btndown = [[ComplexButton alloc] init];
+	newframe.origin.x = newframe.origin.x + btnWidth;
+	btndown.frame = newframe;
+    btndown.enabled = NO;
+	[btndown setTitleColor:[UIColor grayColor] forState:UIControlStateNormal];
+	[btndown setTitleColor:UIColorRGB(0x065cc6) forState:UIControlStateHighlighted];
+	[btndown setImage:[UIImage imageNamed:@"down_n"] forState:UIControlStateNormal];
+	[btndown setImage:[UIImage imageNamed:@"down_p"] forState:UIControlStateHighlighted];
+	[btndown setImage:[UIImage imageNamed:@"down_d"] forState:UIControlStateDisabled];
+	[btndown addTarget:self action:@selector(gotoDown) forControlEvents:UIControlEventTouchUpInside];
+	
+	
+	btncomment = [[ComplexButton alloc] init];
+	newframe.origin.x = newframe.origin.x + btnWidth;
+	btncomment.frame = newframe;
+    btncomment.enabled = NO;
+	[btncomment setTitleColor:[UIColor grayColor] forState:UIControlStateNormal];
+	[btncomment setTitleColor:UIColorRGB(0x065cc6) forState:UIControlStateHighlighted];
+	[btncomment setImage:[UIImage imageNamed:@"comment_n"] forState:UIControlStateNormal];
+	[btncomment setImage:[UIImage imageNamed:@"comment_p"] forState:UIControlStateHighlighted];
+	[btncomment setImage:[UIImage imageNamed:@"comment_d"] forState:UIControlStateDisabled];
+	[btncomment addTarget:self action:@selector(gotoComment) forControlEvents:UIControlEventTouchUpInside];
+    
+
+    btnshare = [[ComplexButton alloc] init];
+	newframe.origin.x = newframe.origin.x + btnWidth;
+	btnshare.frame = newframe;
+    btnshare.enabled = NO;
+	[btnshare setTitleColor:[UIColor grayColor] forState:UIControlStateNormal];
+	[btnshare setTitleColor:UIColorRGB(0x065cc6) forState:UIControlStateHighlighted];
+	[btnshare setImage:[UIImage imageNamed:@"share_n"] forState:UIControlStateNormal];
+	[btnshare setImage:[UIImage imageNamed:@"share_h"] forState:UIControlStateHighlighted];
+	[btnshare setImage:[UIImage imageNamed:@"share_d"] forState:UIControlStateDisabled];
+	[btnshare addTarget:self action:@selector(gotoShare) forControlEvents:UIControlEventTouchUpInside];
+    
+	[tabbar addSubview:bgview];
+	[tabbar addSubview:btnfavorite];
+	[tabbar addSubview:btncomment];
+	[tabbar addSubview:btndown];
+    [tabbar addSubview:btnshare];
+
+    
+	//[self.view addSubview:btnlike];
+    
+    //tabbar添加阴影
+    tabbar.layer.shadowOffset=CGSizeMake(0, -1);
+    tabbar.layer.shadowColor=[UIColor blackColor].CGColor;
+    tabbar.layer.shadowRadius=2;
+    tabbar.layer.shadowOpacity=0.3f;
+    
+	[self.view addSubview:tabbar];
+
+    CMRELEASE(bgview);
+    CMRELEASE(btnfavorite);
+    CMRELEASE(btndown);
+    CMRELEASE(btncomment);
+    CMRELEASE(btnshare);
+    CMRELEASE(tabbar);
+}
+
+- (UIEdgeInsets)itemFitDifferentVersion:(BOOL)leftItem
+{
+    if (__iOS7)
+    {
+        //leftItem YES表示左边item NO表示右边item
+        if (leftItem)
+        {
+            return UIEdgeInsetsMake(0, -20, 0, 0);
+        }
+        else
+        {
+            return UIEdgeInsetsMake(0, 0, 0, -20);
+        }
+    }
+    else
+    {
+        return UIEdgeInsetsMake(0, 0, 0, 0);
+    }
+}
+
+- (void)dealloc {
+    SAFEDELETE(m_pShakeListener);
+    SAFEDELETE(m_pRatingListener);
+    SAFEDELETE(bitem);
+    SAFEDELETE(m_pShake);
+    
+# if ! __has_feature(objc_arc)
+    [super dealloc];
+# endif
+}
+@end

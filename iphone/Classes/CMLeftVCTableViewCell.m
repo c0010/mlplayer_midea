@@ -1,0 +1,79 @@
+//
+//  CMLeftVCTableViewCell.m
+//  MLPlayer
+//
+//  Created by hushengwu on 14-6-13.
+//  Copyright (c) 2014年 w. All rights reserved.
+//
+
+#import "CMLeftVCTableViewCell.h"
+
+@implementation CMLeftVCTableViewCell
+
+- (id)initWithStyle:(UITableViewCellStyle)style reuseIdentifier:(NSString *)reuseIdentifier
+{
+    self = [super initWithStyle:style reuseIdentifier:reuseIdentifier];
+    if (self) {
+        // Initialization code
+        self.LeftImageView = [[UIImageView alloc] initWithFrame:CGRectMake(26, 16, 20, 20)];
+        self.LeftTitle = [[UILabel alloc] initWithFrame:CGRectMake(60, 16, 100, 20)];
+        self.LeftTitle.textColor = UIColorRGB(0x1E1E1F);
+        self.LeftTitle.font = [UIFont systemFontOfSize:16];
+        self.LeftTitle.backgroundColor = [UIColor clearColor];
+        
+        [self.contentView addSubview:self.LeftImageView];
+        [self.contentView addSubview:self.LeftTitle];
+        
+        self.badgeIcon = [UIButton buttonWithType:UIButtonTypeCustom];
+        UIImage *image = [UIImage imageNamed:@"leftbar_update_count"];
+        image = [image resizableImageWithCapInsets:UIEdgeInsetsMake(0, 10, 0, 10)];
+        [self.badgeIcon setBackgroundImage:image forState:UIControlStateNormal];
+        [self.badgeIcon setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
+        self.badgeIcon.titleLabel.font = [UIFont systemFontOfSize:11];
+        [self.badgeIcon setBackgroundColor:[UIColor clearColor]];
+        self.badgeIcon.frame = CGRectMake(133, 16, 24, 12);
+        
+        [self.contentView addSubview:self.badgeIcon];       //cell右侧的红色框数字
+        
+        self.badgeIcon.hidden = YES;
+        
+        self.accessoryImageView = [[UIImageView alloc] initWithFrame:CGRectMake(213, 20, 12, 12)];
+        self.accessoryImageView.contentMode = UIViewContentModeScaleAspectFit;
+        self.accessoryImageView.image = [UIImage imageNamed:@"point_right"];
+        [self.contentView addSubview:self.accessoryImageView];
+        
+        self.sepV = [[UIImageView alloc] init];
+        [self.sepV setImage:[UIImage imageNamed:@"dark_sep"]];
+        
+        [self.contentView addSubview:self.sepV];
+ 
+    }
+    return self;
+}
+
+- (void)awakeFromNib
+{
+    // Initialization code
+}
+
+- (void)layoutSubviews{
+    [super layoutSubviews];
+    self.sepV.frame = CGRectMake(20, self.contentView.bounds.size.height - 1, 205, 1);
+}
+
+- (void)setSelected:(BOOL)selected animated:(BOOL)animated
+{
+    if (selected) {
+        self.backgroundColor = [UIColor colorWithRed:0.0 green:0.0 blue:0.0 alpha:0.05];
+    }
+    else {
+        self.backgroundColor = [UIColor clearColor];
+    }
+    [super setSelected:selected animated:animated];
+  
+    
+
+    // Configure the view for the selected state
+}
+
+@end

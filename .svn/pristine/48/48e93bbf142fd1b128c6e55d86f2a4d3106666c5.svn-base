@@ -1,0 +1,445 @@
+//
+//  CMBrowserInfoControl.h
+//  MLPlayer
+//
+//  Created by sunjj on 11-5-12.
+//  Copyright 2011 w. All rights reserved.
+//
+
+#import <UIKit/UIKit.h>
+#import "CMViewController.h"
+#import "CMWebView.h"
+#import "CMInfoCommentControl.h"
+#include "cmbrowser.h"
+#import "cmcommon.h"
+#import "cmcourseinfo.h"
+#import "cmcomment.h"
+#import "cmfavorites.h"
+#import "tool.h"
+#import "cmexamlist.h"
+#import "cmexerciselist.h"
+
+#import "CMCommentTableViewCell.h"
+
+#import "SDWebImage/UIImageView+WebCache.h"
+#import "qa_ChoiceList.h"
+#import "cmsurveylist.h"
+#import "cmqalist.h"
+#import "FLXFluidTextView.h"
+#import "CMAlertView.h"
+
+class CMNewsInfoUpdateDataListener;
+class CMNewsInfoRatingListener;
+class CMNewsSimpleResultListener;
+class CMNewsInfoGetImageListener;
+
+class CMGotoCoursewareListener;
+class CMGotoNewsListener;
+class CMGotoSurveyListener;
+class CMGotoExamListener;
+class CMGotoExerciseListener;
+class CMGotoQAListener;
+
+
+@interface CMNewsInfoControl : CMViewController<UIGestureRecognizerDelegate,UITextFieldDelegate,UIWebViewDelegate,UITableViewDataSource,UITableViewDelegate,UITextViewDelegate>{
+    UIView* inputView;
+    FLXFluidTextView* inputField;
+    UIButton* backBtn;
+    
+    UIScrollView * backView;
+    
+    UIView *bgview;
+    
+    
+    UIImageView* bottomView;
+    
+    UILabel* infolb;
+    
+    UIButton* likebtn;
+    UILabel* like;
+    
+    NSString* sflag;
+    NSString* classid;
+    NSString* coursewareid;
+    NSString* pubdate;
+    NSInteger pv;
+    BOOL israted;
+    
+    CGFloat commentListHeight;
+    
+    NSInteger selectedIndex;
+    
+    UIButton* btnMore;
+
+    
+    UITableView *commentlist;
+
+    CMWebImage * m_pWebImage;
+
+    CMNewsInfoGetImageListener *m_pGetImageListener;
+
+	CMWebView *webView;
+	UIBarButtonItem* BarButtonFlexibleSpace;
+
+	UITextField* txtcomment;
+	UIBarButtonItem* BarButtontxtComment;
+	UIBarButtonItem* BarButtonbtnComment;
+	UIBarButtonItem* BarButtonbtnFavorite;
+	UIToolbar *toolbar;
+	UIButton* btncomment;
+	UIButton* btnFavorite;
+	NSString* m_sUrl;
+	
+	CGFloat width;
+	CGFloat height;
+	
+	int m_type;
+	int m_index;
+    
+	TCoursewareItem coursewareItem;
+	CMComment * m_pComment;
+    
+	TBrowserItem *m_CourseInfo;
+    
+	CMNewsInfoUpdateDataListener *m_pUpdateDataListener;
+	CMNewsInfoRatingListener *m_pRatingListener;
+	CMNewsSimpleResultListener *m_pSimpleResultListener;
+    
+    CMGotoCoursewareListener *m_pGotoCoursewareListener;
+     CMGotoNewsListener *m_pCMGotoNewsListener;
+     CMGotoSurveyListener *m_pCMGotoSurveyListener;
+     CMGotoExamListener *m_pCMGotoExamListener;
+     CMGotoExerciseListener * m_pCMGotoExerciseListener;
+     CMGotoQAListener * m_pCMGotoQAListener;
+
+    NSString * sOrientation;
+    
+    CMContenthandler* browser;
+    
+    CGFloat keyboardHeight;
+    
+    UIButton* CommentCountBtn;
+    
+    UILabel* CommentCountLb;
+    
+    BOOL isLiked;
+    
+    CMBrowser* tempBrowser;
+    
+    CMExamList* m_pExamlist;
+    
+    CMExerciseList* m_pExerciselist;
+    
+    CMSurveyList * m_pSurveylist;
+    
+    CMQAList * m_pQAlist;
+    
+    CGFloat keyBoardHieght;
+    
+    @public
+    BOOL isRespondToObserver;
+}
+
+@property(nonatomic,strong) NSURL *desturl; //
+
+@property(nonatomic,strong)UITableView *commentlist;
+
+@property(nonatomic,copy) NSString* pubdate;
+@property(nonatomic,assign) NSInteger pv;
+@property(nonatomic,assign) BOOL israted;
+
+@property (nonatomic,copy)  NSString* sflag;
+@property (nonatomic,copy)  NSString* classid;
+@property (nonatomic,copy)  NSString* coursewareid;
+
+@property (nonatomic,strong) IBOutlet CMWebView *webView;
+@property (nonatomic,strong) UIScrollView *backView;
+@property (nonatomic,strong) UIImageView* bottomView;
+@property (nonatomic,strong)     UIButton* likebtn;
+@property (nonatomic,strong) UIButton* CommentCountBtn;
+@property (nonatomic,strong) UILabel* CommentCountLb;
+
+@property (nonatomic,copy) NSString* m_sUrl;
+
+@property (nonatomic,assign)     BOOL isLiked;
+
+@property(nonatomic,strong)     UIView* inputView;
+
+@property(nonatomic,assign)BOOL willShowInputView;
+
+@property (nonatomic,strong) IBOutlet UINavigationBar    *titleBar;
+@property (nonatomic,strong) IBOutlet UINavigationItem     *titleItem;
+@property (nonatomic,strong) IBOutlet UIImageView *titleBackground;
+
+
+-(void)updateCommentCount;
+
+-(void)setInfo:(TBrowserItem&)item url:(NSString*)url;
+-(void)dismissKeyboard;
+-(void)loadTableList;
+-(void)updateComment;
+
+-(void)gotoCourseware;
+-(void)gotoNews;
+-(void)gotoSurvey;
+-(void)gotoQA;
+-(void)gotoExercise;
+-(void)gotoExam;
+
+- (void)popWhenNoNermission;
+
+-(id)initWithOrientation:(NSString *)orientation;
+
+
+@end
+
+class CMNewsInfoGetImageListener:public IMGetImageListener
+{
+	void OnFinish(void* UserData, int Result, int nID)
+	{
+		NSLog(@"CMClassCommentGetImageListener OnFinish Result=%d",Result);
+		
+		CMInfoCommentControl* infoCommentControl = (__bridge CMInfoCommentControl*)UserData;
+		
+		if (Result == TResult::ESuccess || Result == TResult::ENothing) {
+			
+			[infoCommentControl LoadTableList];
+		}else {
+			//[tool ShowError:Result];
+		}
+	}
+};
+
+
+class CMNewsInfoUpdateDataListener : public IMUpdateDataListener
+{
+    virtual void OnUpdateDataProgress(void* UserData, int nPercent)
+	{
+		NSLog(@"CMClassInfoBrowserListener OnUpdateDataProgress");
+	}
+	
+    virtual void OnUpdateDataFinish(void* UserData, int Result) 
+	{
+		NSLog(@"CMClassInfoBrowserListener OnUpdateDataFinish");
+		
+		CMNewsInfoControl* classInfoControl = (__bridge CMNewsInfoControl*)UserData;
+        
+        if(Result == TResult::ESuccess || Result == TResult::ENothing)
+        {
+            [classInfoControl loadTableList];
+            [classInfoControl updateCommentCount];
+            
+            [[NSNotificationCenter defaultCenter] postNotificationName:@"refreshTabarStatus" object:[NSNumber numberWithInt:Result]];
+            
+        }
+        else if(Result == TResult::ENoPowerCourse){
+            CMAlertView *alert = [[CMAlertView alloc] initWithTitle:I(@"提示") message:I(@"该资讯已经在后台进行下架") cancelButtonTitle:nil otherButtonTitles:I(@"确定") completionBlock:^(NSUInteger buttonIndex, CMAlertView *alertView) {
+                if (buttonIndex == BUTTON_CONFIRM_TAG){
+                    [classInfoControl popWhenNoNermission];
+                }
+            }] ;
+            [alert setDisabledOutSide:YES];
+            [alert show];
+        }
+        else {
+            [tool ShowError:Result];
+        }
+		
+	}	
+};
+
+class CMNewsInfoRatingListener : public IMRatingListener
+{
+	void OnRating(void* UserData, int nNewRating, int Result)
+	{
+		
+		if(Result != TResult::ESuccess)
+        {
+ 
+            CMNewsInfoControl * control = (__bridge CMNewsInfoControl*)UserData;
+       
+            [control.likebtn setSelected:NO];
+		}
+		
+		NSLog(@"CMClassInfoRatingListener OnRating result=%d",Result);
+		
+	}
+};
+
+class CMNewsSimpleResultListener : public IMSimpleResultListener
+{
+    void OnRequestFinish(void* UserData, int Result)
+	{
+		NSLog(@"CMCommentSimpleResultListener OnRequestFinish Result=%d",Result);
+        CMNewsInfoControl * control = (__bridge CMNewsInfoControl*)UserData;
+
+		if(Result == TResult::ESuccess){
+            [control dismissKeyboard];
+
+			[tool ShowAlert:I(@"评论成功")];
+		}
+		
+	}
+	
+};
+
+#pragma mark - 跳转到课件
+
+class CMGotoCoursewareListener : public IMUpdateDataListener
+{
+    virtual void OnUpdateDataProgress(void* UserData, int nPercent)
+	{
+		NSLog(@"CMClassInfoBrowserListener OnUpdateDataProgress");
+	}
+	
+    virtual void OnUpdateDataFinish(void* UserData, int Result)
+	{
+		NSLog(@"CMClassInfoBrowserListener OnUpdateDataFinish");
+		if(Result == TResult::ESuccess )
+        {
+            CMNewsInfoControl* classInfoControl = (__bridge CMNewsInfoControl*)UserData;
+            [classInfoControl gotoCourseware];
+        }
+        else
+        {
+            
+            [tool DisimissActivityIndicator];
+        }
+		
+	}
+	
+};
+
+#pragma mark - 跳转到资讯
+
+class CMGotoNewsListener : public IMUpdateDataListener
+{
+    virtual void OnUpdateDataProgress(void* UserData, int nPercent)
+	{
+		NSLog(@"CMClassInfoBrowserListener OnUpdateDataProgress");
+	}
+	
+    virtual void OnUpdateDataFinish(void* UserData, int Result)
+	{
+		NSLog(@"CMClassInfoBrowserListener OnUpdateDataFinish");
+		if(Result == TResult::ESuccess )
+        {
+            CMNewsInfoControl* classInfoControl = (__bridge CMNewsInfoControl*)UserData;
+            [classInfoControl gotoNews];
+        }
+        else
+        {
+            
+            [tool DisimissActivityIndicator];
+        }
+	}
+};
+
+
+#pragma mark - 跳转到调研
+
+class CMGotoSurveyListener : public IMUpdateDataListener
+{
+    virtual void OnUpdateDataProgress(void* UserData, int nPercent)
+	{
+		NSLog(@"CMClassInfoBrowserListener OnUpdateDataProgress");
+	}
+	
+    virtual void OnUpdateDataFinish(void* UserData, int Result)
+	{
+		NSLog(@"CMClassInfoBrowserListener OnUpdateDataFinish");
+		if(Result == TResult::ESuccess )
+        {
+            CMNewsInfoControl* classInfoControl = (__bridge CMNewsInfoControl*)UserData;
+            [classInfoControl gotoSurvey];
+        }
+        else
+        {
+            
+            [tool DisimissActivityIndicator];
+        }
+		
+	}
+	
+};
+
+#pragma mark - 跳转到考试
+
+class CMGotoExamListener : public IMUpdateDataListener
+{
+    virtual void OnUpdateDataProgress(void* UserData, int nPercent)
+	{
+		NSLog(@"CMClassInfoBrowserListener OnUpdateDataProgress");
+	}
+	
+    virtual void OnUpdateDataFinish(void* UserData, int Result)
+	{
+		NSLog(@"CMClassInfoBrowserListener OnUpdateDataFinish");
+		if(Result == TResult::ESuccess )
+        {
+            CMNewsInfoControl* classInfoControl = (__bridge CMNewsInfoControl*)UserData;
+            [classInfoControl gotoExam];
+        }
+        else
+        {
+            
+            [tool DisimissActivityIndicator];
+        }
+		
+	}
+	
+};
+
+#pragma mark - 跳转到练习
+
+class CMGotoExerciseListener : public IMUpdateDataListener
+{
+    virtual void OnUpdateDataProgress(void* UserData, int nPercent)
+	{
+		NSLog(@"CMClassInfoBrowserListener OnUpdateDataProgress");
+	}
+	
+    virtual void OnUpdateDataFinish(void* UserData, int Result)
+	{
+		NSLog(@"CMClassInfoBrowserListener OnUpdateDataFinish");
+		if(Result == TResult::ESuccess )
+        {
+            CMNewsInfoControl* classInfoControl = (__bridge CMNewsInfoControl*)UserData;
+            [classInfoControl gotoExercise];
+        }
+        else
+        {
+            
+            [tool DisimissActivityIndicator];
+        }
+		
+	}
+	
+};
+
+#pragma mark - 跳转到问答
+
+class CMGotoQAListener : public IMUpdateDataListener
+{
+    virtual void OnUpdateDataProgress(void* UserData, int nPercent)
+	{
+		NSLog(@"CMClassInfoBrowserListener OnUpdateDataProgress");
+	}
+	
+    virtual void OnUpdateDataFinish(void* UserData, int Result)
+	{
+		NSLog(@"CMClassInfoBrowserListener OnUpdateDataFinish");
+		if(Result == TResult::ESuccess )
+        {
+            CMNewsInfoControl* classInfoControl = (__bridge CMNewsInfoControl*)UserData;
+            [classInfoControl gotoQA];
+        }
+        else
+        {
+            
+            [tool DisimissActivityIndicator];
+        }
+		
+	}
+	
+};

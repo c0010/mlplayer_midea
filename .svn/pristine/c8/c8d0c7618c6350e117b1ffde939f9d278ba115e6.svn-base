@@ -1,0 +1,112 @@
+//
+//  CMInteractConfig.h
+//  MLPlayer
+//  常量
+//  Created by water on 14-9-26.
+//  Copyright (c) 2014年 w. All rights reserved.
+//
+
+#import <Foundation/Foundation.h>
+#import "cmsettings.h"
+
+#define ChatSortInterval (60 * 5)//聊天界面分组时间间隔
+
+
+#define MsgTypeSingleChat @"chat" //单聊消息标志
+#define MsgTypeGroupChat @"groupchat" //群聊消息标志
+#define MsgTypeError @"error" //出错消息标志
+
+#define DefaultHeaderImage [UIImage imageNamed:@"head.png"]//用户默认头像
+#define DefaultBigHeaderImage [UIImage imageNamed:@"headbig.MyPageViewpng"]//用户默认大头像
+#define DefaultGroupImage  [UIImage imageNamed:@"interact_group_default_head.png"]//群默认头像
+
+#define kXMPPManager [NSString stringWithUTF8String:SETTING.GetXMPPManager()]//系统Jid
+#define kXMPPJid [NSString stringWithUTF8String:SETTING.GetXMPPJid()]//自己的jid
+
+#define kXMPPServerHost [NSString stringWithUTF8String:SETTING.GetXMPPHostname()]//xmpp服务器地址
+#define kXMPPPassword [NSString stringWithUTF8String:SETTING.GetXMPPPwd()]//xmpp认证密码
+
+#define kCurrUser XMPPChatStorage.currUser//自己的user
+
+#define MBlock   [CMMsgBlock sharedInstance]
+
+#define CacheMaxForGroupCount 200   //群组缓存
+#define CacheMaxForDialogueCount 200  //会话缓存
+#define CacheMaxForChatCount 20  //消息每次加载量
+#define CacheMaxForSystemChatCount 100  //系统消息缓存
+
+#define RefreshGroupInfoNSNotification @"CMGroupInfoExitViewController"//刷新群信息
+#define RefreshGroupListNSNotification @"RefreshGroupListNSNotification"//刷新群组列表
+
+#define InteractItemTag 10
+
+#define Pre_RoomJid(roomJID) [NSPredicate predicateWithFormat:@"roomJID == %@", roomJID] //关于roomJID的查询条件
+#define Pre_UserJid(jid) [NSPredicate predicateWithFormat:@"jid == %@", jid]
+#define Pre_MsgID(msgID) [NSPredicate predicateWithFormat:@"mID == %@", msgID]
+
+#define CDNameFromGroupItem @""
+//xmpp操作句柄
+#define XmppHandler [CMXmppHandler sharedInstance]
+
+//发送消息工具类单例
+#define MsgManager [CMMsgManager manager]
+
+//普通群roomJID后缀
+#define ConferenceType @"conference.cmb.wd.test.trylose.cn"
+
+//通过roomJid判断是否为培训班群
+#define NonTrain(roomJID) [roomJID rangeOfString:ConferenceType options:NSForcedOrderingSearch].location != NSNotFound
+
+
+//是否可以分享到互动
+#define  NOShareInteract     0
+
+//消息类型
+enum CMMessageType{
+    CMMessageCourseType = 10,//发送课程/课件
+    CMMessageImageType = 11,//发送图片
+    CMMessageQAType = 12,//发送问答
+};
+
+//发送消息状态
+enum CMSendMessageState{
+    CMSendMessageStateFailure = -1,//发送失败
+    CMSendMessageStateSending = 0,//发送中
+    CMSendMessageStateSuccess = 1,//发送成功
+};
+
+//单/群聊标识
+enum CMChatType{
+    CMUnkownChatType = -1,
+    CMSingleChatType = 0,
+    CMGroupChatType = 1,
+};
+
+//群成员类型
+enum CMGroupMemberState{
+    CMGroupMemberStateNone = -1,//非成员
+    CMGroupMemberStateNormal = 0,//普通成员
+    CMGroupMemberStateManager = 2,//管理员
+    CMGroupMemberStateCreater = 5,//群主
+};
+
+//系统消息类别
+enum CMInteractSystemMessageType{
+    CMInteractSystemMessageTypeInvite = 100,
+    CMInteractSystemMessageTypeApply = 101,
+    CMInteractSystemMessageTypeCreate = 200,
+    CMInteractSystemMessageTypePassApply = 201,
+    CMInteractSystemMessageTypeRefuse = 202,
+    CMInteractSystemMessageTypeKick = 203,
+    CMInteractSystemMessageTypeSetManager = 204,
+    CMInteractSystemMessageTypeQuit = 205,
+    CMInteractSystemMessageTypeCancelManager = 206,
+    CMInteractSystemMessageTypeDisBand = 207,
+};
+
+//可交互系统消息状态
+enum CMSysMessageState {
+    CMSysMessageStateNone = 0,//未处理
+    CMSysMessageStateAgree = 1,//已同意
+    CMSysMessageStateRefuse = 2,//已拒绝
+};
